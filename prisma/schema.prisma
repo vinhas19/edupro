@@ -1,0 +1,918 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── MULTI-TENANT ─────────────────────────────────────────────────────────────
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  address   String?
+  phone     String?
+  email     String?
+  plan      Plan     @default(FREE)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  courses       Course[]
+  rooms         Room[]
+  documents     Document[]
+  notifications Notification[]
+  academicYears AcademicYear[]
+
+  @@map("schools")
+}
+
+enum Plan {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+// ─── USERS & AUTH ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String
+  emailVerified DateTime?
+  passwordHash  String?
+  image         String?
+  role          Role      @default(STUDENT)
+  active        Boolean   @default(true)
+  schoolId      String
+  school        School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  taughtSubjectAssignments SubjectAssignment[]    @relation("TeacherAssignments")
+  directedClasses          Class[]               @relation("ClassDirector")
+  directedCourses          Course[]              @relation("CourseDirector")
+  enrollments              Enrollment[]
+  lessons                  Lesson[]
+  attendanceRecords        AttendanceRecord[]
+  absenceJustifications    AbsenceJustification[] @relation("ApprovedBy")
+  fctRecords               FctRecord[]
+  papRecords               PapRecord[]            @relation("StudentPap")
+  papAdvisory              PapRecord[]            @relation("AdvisorPap")
+  papJury                  PapJuryMember[]
+  documents                Document[]
+  notificationsSent        Notification[]
+  notificationReceipts     NotificationRecipient[]
+  moduleProgress           StudentModuleProgress[]
+
+  files                 File[]
+  classroomPosts        ClassroomPost[]
+  postComments          PostComment[]
+  submissions           Submission[]
+  submissionsReviewed   Submission[]    @relation("SubmissionReviewer")
+  privateComments       PrivateComment[]
+  conversationsAsUser1  Conversation[]  @relation("ConvUser1")
+  conversationsAsUser2  Conversation[]  @relation("ConvUser2")
+  messagesSent          Message[]
+  absences              TeacherAbsence[]
+  substitutionsAssigned Substitution[]  @relation("SubstituteTeacher")
+  absenceCreatedBy      TeacherAbsence[] @relation("AbsenceCreator")
+  scheduleBlocks        ScheduleBlock[] @relation("ScheduleTeacher")
+
+  accounts Account[]
+  sessions Session[]
+
+  @@unique([email, schoolId])
+  @@map("users")
+}
+
+enum Role {
+  SUPER_ADMIN
+  SCHOOL_ADMIN
+  COURSE_DIRECTOR
+  CLASS_DIRECTOR
+  TEACHER
+  STUDENT
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ─── ACADEMIC YEAR ────────────────────────────────────────────────────────────
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  label     String
+  startDate DateTime
+  endDate   DateTime
+  active    Boolean  @default(false)
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  classes Class[]
+
+  @@map("academic_years")
+}
+
+// ─── MODULE 1: CURSOS & TURMAS ────────────────────────────────────────────────
+
+model Course {
+  id            String  @id @default(cuid())
+  schoolId      String
+  school        School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name          String
+  code          String
+  formationArea String
+  level         Int     @default(4)
+  totalHours    Int
+  description   String?
+  active        Boolean @default(true)
+  directorId    String?
+  director      User?   @relation("CourseDirector", fields: [directorId], references: [id])
+  createdAt     DateTime @default(now())
+
+  subjects Subject[]
+  classes  Class[]
+
+  @@unique([code, schoolId])
+  @@map("courses")
+}
+
+model Class {
+  id              String       @id @default(cuid())
+  courseId        String
+  course          Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  academicYearId  String
+  academicYear    AcademicYear @relation(fields: [academicYearId], references: [id])
+  name            String
+  year            Int
+  classDirectorId String?
+  classDirector   User?        @relation("ClassDirector", fields: [classDirectorId], references: [id])
+  createdAt       DateTime     @default(now())
+
+  enrollments        Enrollment[]
+  scheduleBlocks     ScheduleBlock[]
+  lessons            Lesson[]
+  subjectAssignments SubjectAssignment[]
+  fctRecords         FctRecord[]
+  papRecords         PapRecord[]
+  classroomTopics    ClassroomTopic[]
+  classroomPosts     ClassroomPost[]
+  files              File[]
+  substitutions      Substitution[]
+
+  @@map("classes")
+}
+
+model Enrollment {
+  id         String           @id @default(cuid())
+  studentId  String
+  student    User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId    String
+  class      Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  status     EnrollmentStatus @default(ACTIVE)
+  enrolledAt DateTime         @default(now())
+  leftAt     DateTime?
+
+  @@unique([studentId, classId])
+  @@map("enrollments")
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  SUSPENDED
+  WITHDRAWN
+  COMPLETED
+}
+
+// ─── MODULE 2: DISCIPLINAS & MÓDULOS ─────────────────────────────────────────
+
+model Subject {
+  id         String             @id @default(cuid())
+  courseId   String
+  course     Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  name       String
+  code       String?
+  component  FormationComponent
+  totalHours Int
+  order      Int                @default(0)
+
+  modules            Module[]
+  subjectAssignments SubjectAssignment[]
+  scheduleBlocks     ScheduleBlock[]
+  lessons            Lesson[]
+  classroomPosts     ClassroomPost[]
+  files              File[]
+  substitutions      Substitution[]
+
+  @@map("subjects")
+}
+
+enum FormationComponent {
+  SOCIOCULTURAL
+  SCIENTIFIC
+  TECHNICAL
+  FCT
+  PAP
+}
+
+model Module {
+  id          String  @id @default(cuid())
+  subjectId   String
+  subject     Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  name        String
+  number      Int
+  hours       Int
+  description String?
+  order       Int     @default(0)
+
+  studentProgress StudentModuleProgress[]
+
+  @@map("modules")
+}
+
+model SubjectAssignment {
+  id        String  @id @default(cuid())
+  teacherId String
+  teacher   User    @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, subjectId, classId])
+  @@map("subject_assignments")
+}
+
+model StudentModuleProgress {
+  id          String       @id @default(cuid())
+  studentId   String
+  student     User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  moduleId    String
+  module      Module       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  status      ModuleStatus @default(NOT_STARTED)
+  grade       Float?
+  attempt     Int          @default(1)
+  completedAt DateTime?
+  updatedAt   DateTime     @updatedAt
+
+  evaluations ModuleEvaluation[]
+
+  @@unique([studentId, moduleId])
+  @@map("student_module_progress")
+}
+
+enum ModuleStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  RECURSO
+  SPECIAL_EPOCH
+  APPROVED
+  FAILED
+}
+
+model ModuleEvaluation {
+  id         String                @id @default(cuid())
+  progressId String
+  progress   StudentModuleProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  type       EvaluationType
+  grade      Float
+  date       DateTime
+  notes      String?
+  createdAt  DateTime              @default(now())
+
+  @@map("module_evaluations")
+}
+
+enum EvaluationType {
+  NORMAL
+  RECURSO
+  SPECIAL_EPOCH
+  EXTRAORDINARY
+}
+
+// ─── MODULE 3: HORÁRIOS ───────────────────────────────────────────────────────
+
+model Room {
+  id       String   @id @default(cuid())
+  schoolId String
+  school   School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name     String
+  capacity Int?
+  type     RoomType @default(CLASSROOM)
+
+  scheduleBlocks ScheduleBlock[]
+
+  @@map("rooms")
+}
+
+enum RoomType {
+  CLASSROOM
+  LAB
+  WORKSHOP
+  GYM
+  AUDITORIUM
+  OTHER
+}
+
+model ScheduleBlock {
+  id         String    @id @default(cuid())
+  classId    String
+  class      Class     @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId  String?
+  teacher    User?     @relation("ScheduleTeacher", fields: [teacherId], references: [id])
+  subjectId  String
+  subject    Subject   @relation(fields: [subjectId], references: [id])
+  roomId     String?
+  room       Room?     @relation(fields: [roomId], references: [id])
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  validFrom  DateTime?
+  validUntil DateTime?
+
+  lessons       Lesson[]
+  substitutions Substitution[]
+
+  @@map("schedule_blocks")
+}
+
+// ─── MODULE 4 & 5: ASSIDUIDADE & SUMÁRIOS ────────────────────────────────────
+
+model Lesson {
+  id              String         @id @default(cuid())
+  scheduleBlockId String?
+  scheduleBlock   ScheduleBlock? @relation(fields: [scheduleBlockId], references: [id])
+  classId         String
+  class           Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId       String
+  teacher         User           @relation(fields: [teacherId], references: [id])
+  subjectId       String
+  subject         Subject        @relation(fields: [subjectId], references: [id])
+  date            DateTime
+  startTime       String
+  endTime         String
+  summary         String?
+  lessonNumber    Int?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  attendanceRecords AttendanceRecord[]
+
+  @@map("lessons")
+}
+
+model AttendanceRecord {
+  id        String           @id @default(cuid())
+  lessonId  String
+  lesson    Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  studentId String
+  student   User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status    AttendanceStatus @default(PRESENT)
+  notes     String?
+  createdAt DateTime         @default(now())
+
+  justification AbsenceJustification?
+
+  @@unique([lessonId, studentId])
+  @@map("attendance_records")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  JUSTIFIED
+  LATE
+}
+
+model AbsenceJustification {
+  id                 String              @id @default(cuid())
+  attendanceRecordId String              @unique
+  attendanceRecord   AttendanceRecord    @relation(fields: [attendanceRecordId], references: [id], onDelete: Cascade)
+  reason             String
+  documentUrl        String?
+  status             JustificationStatus @default(PENDING)
+  approvedById       String?
+  approvedBy         User?               @relation("ApprovedBy", fields: [approvedById], references: [id])
+  approvedAt         DateTime?
+  createdAt          DateTime            @default(now())
+
+  @@map("absence_justifications")
+}
+
+enum JustificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ─── MODULE 6: FCT ────────────────────────────────────────────────────────────
+
+model FctRecord {
+  id              String    @id @default(cuid())
+  studentId       String
+  student         User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId         String
+  class           Class     @relation(fields: [classId], references: [id])
+  companyName     String
+  supervisorName  String?
+  supervisorEmail String?
+  supervisorPhone String?
+  startDate       DateTime
+  endDate         DateTime
+  requiredHours   Int
+  completedHours  Int       @default(0)
+  grade           Float?
+  status          FctStatus @default(PLANNED)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  documents FctDocument[]
+  reports   FctReport[]
+
+  @@map("fct_records")
+}
+
+enum FctStatus {
+  PLANNED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+model FctDocument {
+  id         String     @id @default(cuid())
+  fctId      String
+  fct        FctRecord  @relation(fields: [fctId], references: [id], onDelete: Cascade)
+  type       FctDocType
+  title      String
+  fileUrl    String
+  uploadedAt DateTime   @default(now())
+
+  @@map("fct_documents")
+}
+
+enum FctDocType {
+  PROTOCOL
+  INSURANCE
+  STUDENT_REPORT
+  SUPERVISOR_EVALUATION
+  OTHER
+}
+
+model FctReport {
+  id          String    @id @default(cuid())
+  fctId       String
+  fct         FctRecord @relation(fields: [fctId], references: [id], onDelete: Cascade)
+  reportType  String
+  content     String?
+  fileUrl     String?
+  submittedAt DateTime?
+  grade       Float?
+  createdAt   DateTime  @default(now())
+
+  @@map("fct_reports")
+}
+
+// ─── MODULE 7: PAP ────────────────────────────────────────────────────────────
+
+model PapRecord {
+  id          String    @id @default(cuid())
+  studentId   String
+  student     User      @relation("StudentPap", fields: [studentId], references: [id], onDelete: Cascade)
+  classId     String
+  class       Class     @relation(fields: [classId], references: [id])
+  advisorId   String?
+  advisor     User?     @relation("AdvisorPap", fields: [advisorId], references: [id])
+  title       String?
+  description String?
+  status      PapStatus @default(PROPOSAL)
+  finalGrade  Float?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  phases      PapPhase[]
+  jury        PapJuryMember[]
+  evaluations PapEvaluation[]
+
+  @@map("pap_records")
+}
+
+enum PapStatus {
+  PROPOSAL
+  DEVELOPMENT
+  SUBMITTED
+  PRESENTATION
+  COMPLETED
+  FAILED
+}
+
+model PapPhase {
+  id          String       @id @default(cuid())
+  papId       String
+  pap         PapRecord    @relation(fields: [papId], references: [id], onDelete: Cascade)
+  phase       PapPhaseType
+  dueDate     DateTime?
+  submittedAt DateTime?
+  fileUrl     String?
+  status      PhaseStatus  @default(PENDING)
+  notes       String?
+
+  @@map("pap_phases")
+}
+
+enum PapPhaseType {
+  PROPOSAL
+  DEVELOPMENT
+  SUBMISSION
+  PRESENTATION
+}
+
+enum PhaseStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model PapJuryMember {
+  id     String    @id @default(cuid())
+  papId  String
+  pap    PapRecord @relation(fields: [papId], references: [id], onDelete: Cascade)
+  userId String
+  user   User      @relation(fields: [userId], references: [id])
+  role   JuryRole
+
+  @@map("pap_jury_members")
+}
+
+enum JuryRole {
+  PRESIDENT
+  ADVISOR
+  EXTERNAL_MEMBER
+  MEMBER
+}
+
+model PapEvaluation {
+  id        String    @id @default(cuid())
+  papId     String
+  pap       PapRecord @relation(fields: [papId], references: [id], onDelete: Cascade)
+  component String
+  grade     Float
+  weight    Float     @default(1.0)
+  notes     String?
+  createdAt DateTime  @default(now())
+
+  @@map("pap_evaluations")
+}
+
+// ─── MODULE 8: DOCUMENTOS ─────────────────────────────────────────────────────
+
+model Document {
+  id          String           @id @default(cuid())
+  schoolId    String
+  school      School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  uploaderId  String
+  uploader    User             @relation(fields: [uploaderId], references: [id])
+  category    DocumentCategory
+  title       String
+  description String?
+  fileUrl     String
+  fileSize    Int?
+  mimeType    String?
+  accessLevel DocumentAccess   @default(STAFF)
+  createdAt   DateTime         @default(now())
+
+  @@map("documents")
+}
+
+enum DocumentCategory {
+  MINUTES
+  REGULATIONS
+  PLANIFICATIONS
+  STUDENT_FILES
+  FCT_DOCS
+  PAP_DOCS
+  OTHER
+}
+
+enum DocumentAccess {
+  PUBLIC
+  STUDENT
+  STAFF
+  ADMIN
+}
+
+// ─── MODULE 9: COMUNICAÇÕES ───────────────────────────────────────────────────
+
+model Notification {
+  id            String            @id @default(cuid())
+  schoolId      String
+  school        School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        User              @relation(fields: [senderId], references: [id])
+  title         String
+  content       String
+  type          NotificationType  @default(INFO)
+  recipientType RecipientType     @default(ALL_SCHOOL)
+  classId       String?
+  createdAt     DateTime          @default(now())
+
+  recipients NotificationRecipient[]
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ALERT
+  DEADLINE
+}
+
+enum RecipientType {
+  ALL_SCHOOL
+  ALL_STUDENTS
+  ALL_TEACHERS
+  CLASS_STUDENTS
+  CLASS_TEACHERS
+  INDIVIDUAL
+}
+
+model NotificationRecipient {
+  id             String       @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  recipientId    String
+  recipient      User         @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  readAt         DateTime?
+
+  @@unique([notificationId, recipientId])
+  @@map("notification_recipients")
+}
+
+// ─── MODULE 10: FILES (Storage) ───────────────────────────────────────────────
+
+model File {
+  id         String         @id @default(cuid())
+  name       String                  // original filename
+  storageKey String                  // key/path in cloud storage (UploadThing fileKey)
+  url        String                  // public URL
+  size       Int
+  mimeType   String
+  ownerId    String
+  owner      User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  visibility FileVisibility @default(PRIVATE)
+  classId    String?
+  class      Class?         @relation(fields: [classId], references: [id], onDelete: SetNull)
+  subjectId  String?
+  subject    Subject?       @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  postId     String?
+  post       ClassroomPost? @relation("PostAttachments", fields: [postId], references: [id], onDelete: Cascade)
+  submissionId String?
+  submission Submission?    @relation("SubmissionFiles", fields: [submissionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now())
+
+  @@index([ownerId])
+  @@index([visibility])
+  @@index([classId])
+  @@map("files")
+}
+
+enum FileVisibility {
+  PRIVATE          // only owner
+  STAFF_SHARED     // all teachers + admins (Sala de Professores)
+  ADMIN_SHARED     // only admins
+  CLASS_SHARED     // students of the class + teacher(s)
+  POST_ATTACHMENT  // attached to a classroom post
+  SUBMISSION       // student submission
+}
+
+// ─── MODULE 11: CLASSROOM (Stream + Classwork) ────────────────────────────────
+
+model ClassroomTopic {
+  id        String          @id @default(cuid())
+  classId   String
+  class     Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int             @default(0)
+  createdAt DateTime        @default(now())
+
+  posts ClassroomPost[]
+
+  @@map("classroom_topics")
+}
+
+model ClassroomPost {
+  id          String          @id @default(cuid())
+  classId     String
+  class       Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  topicId     String?
+  topic       ClassroomTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  subjectId   String?
+  subject     Subject?        @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  authorId    String
+  author      User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  type        PostType        @default(ANNOUNCEMENT)
+  title       String?
+  content     String?
+  dueDate     DateTime?
+  maxGrade    Float?
+  published   Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  attachments File[]        @relation("PostAttachments")
+  comments    PostComment[]
+  submissions Submission[]
+
+  @@index([classId])
+  @@index([authorId])
+  @@map("classroom_posts")
+}
+
+enum PostType {
+  ANNOUNCEMENT  // simple text post for the class stream
+  MATERIAL      // reading/resource shared with class
+  ASSIGNMENT    // task with due date, students submit
+  QUESTION      // question for students to answer
+}
+
+model PostComment {
+  id        String        @id @default(cuid())
+  postId    String
+  post      ClassroomPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime      @default(now())
+
+  @@index([postId])
+  @@map("post_comments")
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  postId      String
+  post        ClassroomPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  status      SubmissionStatus @default(NOT_SUBMITTED)
+  submittedAt DateTime?
+  grade       Float?
+  feedback    String?
+  reviewedAt  DateTime?
+  reviewerId  String?
+  reviewer    User?            @relation("SubmissionReviewer", fields: [reviewerId], references: [id])
+
+  files            File[]           @relation("SubmissionFiles")
+  privateComments  PrivateComment[]
+
+  @@unique([postId, studentId])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+enum SubmissionStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  RETURNED
+  LATE
+  GRADED
+}
+
+model PrivateComment {
+  id           String     @id @default(cuid())
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  senderId     String
+  sender       User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content      String
+  createdAt    DateTime   @default(now())
+
+  @@index([submissionId])
+  @@map("private_comments")
+}
+
+// ─── MODULE 12: CHAT (Direct Messages) ────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(cuid())
+  user1Id   String                    // always the lexicographically smaller user id
+  user1     User     @relation("ConvUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2Id   String
+  user2     User     @relation("ConvUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  schoolId  String
+  createdAt DateTime @default(now())
+
+  messages Message[]
+
+  @@unique([user1Id, user2Id])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// ─── MODULE 13: ABSENCES & SUBSTITUTIONS ──────────────────────────────────────
+
+model TeacherAbsence {
+  id          String   @id @default(cuid())
+  teacherId   String
+  teacher     User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  date        DateTime               // the calendar date (yyyy-mm-dd)
+  startTime   String                 // "HH:MM"
+  endTime     String                 // "HH:MM"
+  reason      String?
+  createdById String
+  createdBy   User     @relation("AbsenceCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  substitutions Substitution[]
+
+  @@index([teacherId, date])
+  @@map("teacher_absences")
+}
+
+model Substitution {
+  id            String         @id @default(cuid())
+  absenceId     String
+  absence       TeacherAbsence @relation(fields: [absenceId], references: [id], onDelete: Cascade)
+  scheduleBlockId String?
+  scheduleBlock ScheduleBlock? @relation(fields: [scheduleBlockId], references: [id], onDelete: SetNull)
+  classId       String
+  class         Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId     String
+  subject       Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  startTime     String
+  endTime       String
+  substituteId  String?
+  substitute    User?          @relation("SubstituteTeacher", fields: [substituteId], references: [id])
+  status        SubstitutionStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime       @default(now())
+
+  @@index([absenceId])
+  @@map("substitutions")
+}
+
+enum SubstitutionStatus {
+  PENDING        // no substitute yet
+  ASSIGNED       // someone assigned but didn't confirm
+  CONFIRMED      // substitute confirmed
+  CANCELLED      // class cancelled altogether
+}
