@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,7 @@ import { ProfileForm } from "@/components/profile/profile-form";
 import { NotificationsToggle } from "@/components/settings/notifications-toggle";
 import { CalendarTokenSection } from "@/components/profile/calendar-token-section";
 import { ROLE_LABELS } from "@/lib/permissions";
+import { Bell, ChevronRight } from "lucide-react";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -82,8 +84,25 @@ export default async function ProfilePage() {
             <CardHeader>
               <CardTitle className="text-base">Notificações</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <NotificationsToggle publicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
+              <Link
+                href="/dashboard/settings/notifications"
+                className="flex items-center justify-between p-3 -mx-1 rounded-lg border hover:bg-muted/40 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="rounded-md bg-blue-50 p-1.5 text-blue-700">
+                    <Bell className="h-3.5 w-3.5" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-medium">Preferências detalhadas</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Email, SMS, horas de silêncio e por tipo.
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Link>
             </CardContent>
           </Card>
 

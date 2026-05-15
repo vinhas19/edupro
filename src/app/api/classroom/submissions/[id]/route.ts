@@ -5,6 +5,8 @@ import { Role, SubmissionStatus, ModuleStatus, EvaluationType } from "@prisma/cl
 import { hasRole } from "@/lib/permissions";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
+import { notify, resolveGuardianIds, truncateSms } from "@/lib/notify";
+import { GradePublishedEmail } from "@/emails/grade-published";
 
 const gradeSchema = z.object({
   grade: z.number().min(0).max(20).nullable().optional(),
@@ -130,6 +132,70 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     entityId: id,
     meta: { grade: parsed.data.grade ?? null },
   });
+
+  // Notificar aluno + EE quando há nota nova
+  if (parsed.data.grade != null && submission.studentId !== session.user.id) {
+    const full = await prisma.submission.findUnique({
+      where: { id },
+      include: {
+        student: { select: { id: true, name: true } },
+        post: {
+          include: {
+            subject: { select: { name: true } },
+            module: { select: { name: true } },
+            class: { include: { course: { include: { school: true } } } },
+          },
+        },
+      },
+    });
+    if (full) {
+      const reviewer = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true },
+      });
+      const guardians = await resolveGuardianIds([full.studentId]);
+      const recipients = [...new Set([full.studentId, ...guardians])];
+      const subjectName = full.post.subject?.name ?? full.post.title ?? "Disciplina";
+      const moduleName = full.post.module?.name;
+      const grade = parsed.data.grade;
+      const maxGrade = full.post.maxGrade ?? 20;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+
+      void notify({
+        schoolId: session.user.schoolId,
+        senderId: session.user.id,
+        category: "GRADE",
+        title: `Nota publicada · ${subjectName}`,
+        content: `${full.student.name} · ${grade}/${maxGrade}`,
+        type: "INFO",
+        recipientType: "INDIVIDUAL",
+        recipientIds: recipients,
+        url: `${appUrl}/dashboard/boletim`,
+        email: {
+          subject: `[${full.post.class.course.school.name}] Nova nota — ${subjectName}`,
+          react: GradePublishedEmail({
+            recipientName: "—",
+            schoolName: full.post.class.course.school.name,
+            studentName: full.student.name,
+            subjectName,
+            moduleName,
+            grade,
+            maxGrade,
+            status: full.post.countsForModule
+              ? grade >= 10
+                ? "APPROVED"
+                : "FAILED"
+              : undefined,
+            evaluatorName: reviewer?.name,
+            url: `${appUrl}/dashboard/boletim`,
+          }),
+        },
+        sms: truncateSms(
+          `Nota: ${full.student.name} ${grade}/${maxGrade} em ${subjectName}.`,
+        ),
+      }).catch((err) => console.error("[notify] grade failed", err));
+    }
+  }
 
   return NextResponse.json(updated);
 }

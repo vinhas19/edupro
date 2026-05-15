@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScheduleConfigForm } from "@/components/settings/schedule-config-form";
 import { TimeSlotsEditor } from "@/components/settings/time-slots-editor";
+import { Bell, ChevronRight } from "lucide-react";
 
 const PLAN_LABELS: Record<Plan, string> = {
   FREE: "Gratuito",
@@ -64,6 +66,26 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-bold">Definições</h1>
         <p className="text-muted-foreground">Configurações da escola</p>
       </div>
+
+      <Card>
+        <Link
+          href="/dashboard/settings/notifications"
+          className="flex items-center justify-between p-4 hover:bg-muted/40 rounded-xl transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-blue-50 p-2 text-blue-700">
+              <Bell className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Notificações</p>
+              <p className="text-[12px] text-muted-foreground">
+                Preferências de email, SMS, push e horas de silêncio.
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </Link>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

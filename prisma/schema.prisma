@@ -73,6 +73,8 @@ model User {
   schoolId      String
   school        School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   iCalToken     String?   // token para feed iCal pessoal (unique via @@index abaixo)
+  phoneE164     String?   // telefone para SMS, formato E.164 (+351...)
+  phoneVerified Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -113,6 +115,9 @@ model User {
   pushSubscriptions PushSubscription[]
   auditLogs         AuditLog[]
   foldersCreated    Folder[]          @relation("FolderCreator")
+
+  notificationPreference NotificationPreference?
+  phoneVerifications     PhoneVerification[]
 
   accounts Account[]
   sessions Session[]
@@ -771,8 +776,109 @@ model NotificationRecipient {
   recipient      User         @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   readAt         DateTime?
 
+  deliveries NotificationDelivery[]
+
   @@unique([notificationId, recipientId])
   @@map("notification_recipients")
+}
+
+// ─── NOTIFICATION PREFERENCES & DELIVERY ──────────────────────────────────────
+
+model NotificationPreference {
+  id        String @id @default(cuid())
+  userId    String @unique
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Cada categoria guarda os canais escolhidos (JSON array de NotificationChannel).
+  // Defaults razoáveis: tudo o que muda o dia-a-dia → PUSH + IN_APP; pais → EMAIL extra; alertas críticos → SMS.
+  scheduleChanges     Json  @default("[\"PUSH\",\"IN_APP\",\"EMAIL\"]")
+  lessonCancelled     Json  @default("[\"PUSH\",\"IN_APP\",\"EMAIL\",\"SMS\"]")
+  absences            Json  @default("[\"PUSH\",\"IN_APP\",\"EMAIL\"]")
+  justifications      Json  @default("[\"PUSH\",\"IN_APP\",\"EMAIL\"]")
+  grades              Json  @default("[\"IN_APP\",\"EMAIL\"]")
+  assignments         Json  @default("[\"PUSH\",\"IN_APP\"]")
+  messages            Json  @default("[\"PUSH\",\"IN_APP\"]")
+  announcements       Json  @default("[\"PUSH\",\"IN_APP\"]")
+  fctPapMilestones    Json  @default("[\"IN_APP\",\"EMAIL\"]")
+  substitutions       Json  @default("[\"PUSH\",\"IN_APP\",\"EMAIL\"]")
+
+  // Quiet hours (formato "HH:MM"; se start == end ou null, desativado).
+  // Mensagens marcadas como urgentSilent ignoram quiet hours.
+  quietHoursStart String?
+  quietHoursEnd   String?
+
+  // Master toggles
+  emailEnabled Boolean @default(true)
+  smsEnabled   Boolean @default(true)
+  pushEnabled  Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@map("notification_preferences")
+}
+
+enum NotificationChannel {
+  IN_APP
+  PUSH
+  EMAIL
+  SMS
+}
+
+enum NotificationCategory {
+  SCHEDULE_CHANGE
+  LESSON_CANCELLED
+  ABSENCE
+  JUSTIFICATION
+  GRADE
+  ASSIGNMENT
+  MESSAGE
+  ANNOUNCEMENT
+  FCT_PAP_MILESTONE
+  SUBSTITUTION
+}
+
+enum DeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  SKIPPED        // por preferência ou quiet hours
+}
+
+model NotificationDelivery {
+  id          String              @id @default(cuid())
+  recipientId String              // FK -> NotificationRecipient.id
+  recipient   NotificationRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  channel     NotificationChannel
+  status      DeliveryStatus      @default(QUEUED)
+  category    NotificationCategory
+  providerId  String?             // ID do provider (Resend/Twilio/web-push)
+  target      String?             // email ou telefone usado (para auditoria)
+  error       String?
+  attempts    Int                 @default(0)
+  sentAt      DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([recipientId])
+  @@index([status, channel])
+  @@map("notification_deliveries")
+}
+
+model PhoneVerification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneE164   String
+  codeHash    String                // bcrypt do código OTP de 6 dígitos
+  expiresAt   DateTime
+  attempts    Int      @default(0)
+  consumedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("phone_verifications")
 }
 
 // ─── MODULE 10: FILES (Storage) ───────────────────────────────────────────────
