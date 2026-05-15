@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -7,9 +6,9 @@ import { hasRole } from "@/lib/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, ClipboardList, UserX, Calendar as CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isSameDay, isToday, isSameMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isToday, isSameMonth } from "date-fns";
 import { pt } from "date-fns/locale";
 
 const DAY_HEADERS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -135,9 +134,9 @@ export default async function CalendarPage({
 
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+          <div className="grid grid-cols-7 gap-px bg-[var(--separator)] rounded-lg overflow-hidden border border-[var(--separator)]">
             {DAY_HEADERS.map((h) => (
-              <div key={h} className="bg-gray-50 text-center text-xs font-semibold py-2 text-muted-foreground">
+              <div key={h} className="bg-[var(--muted)] text-center text-[11px] font-semibold uppercase tracking-[0.04em] py-2 text-[var(--muted-foreground)]">
                 {h}
               </div>
             ))}
@@ -148,13 +147,22 @@ export default async function CalendarPage({
               return (
                 <div
                   key={key}
-                  className={`bg-white min-h-[100px] p-1.5 ${!inMonth ? "opacity-40" : ""}`}
+                  className={
+                    "min-h-[100px] p-1.5 " +
+                    (inMonth
+                      ? "bg-[var(--card)]"
+                      : "bg-[var(--muted)]/30")
+                  }
                 >
                   <div className="flex items-center justify-between">
                     <span
-                      className={`text-xs font-medium ${
-                        isToday(d) ? "bg-blue-600 text-white rounded-full h-5 w-5 flex items-center justify-center" : ""
-                      }`}
+                      className={
+                        isToday(d)
+                          ? "text-[12px] font-semibold bg-[var(--primary)] text-white rounded-full h-6 w-6 flex items-center justify-center tabular-nums shadow-sm"
+                          : inMonth
+                            ? "text-[13px] font-semibold tabular-nums text-[var(--foreground)]"
+                            : "text-[13px] font-medium tabular-nums text-[var(--muted-foreground)]"
+                      }
                     >
                       {format(d, "d")}
                     </span>
@@ -164,17 +172,16 @@ export default async function CalendarPage({
                       <Link
                         key={i}
                         href={e.href}
-                        className={`block truncate rounded px-1 py-0.5 text-[10px] ${
-                          e.type === "ASSIGNMENT"
-                            ? "bg-orange-100 text-orange-800 hover:bg-orange-200"
-                            : "bg-red-100 text-red-800 hover:bg-red-200"
-                        }`}
+                        className="block truncate rounded px-1 py-0.5 text-[10px] font-medium text-white hover:opacity-90"
+                        style={{
+                          background: e.type === "ASSIGNMENT" ? "var(--tint-orange)" : "var(--tint-red)",
+                        }}
                       >
                         {e.type === "ASSIGNMENT" ? "📝 " : "⚠ "}{e.label}
                       </Link>
                     ))}
                     {events.length > 3 && (
-                      <p className="text-[10px] text-muted-foreground px-1">+{events.length - 3}</p>
+                      <p className="text-[10px] text-[var(--muted-foreground)] px-1">+{events.length - 3}</p>
                     )}
                   </div>
                 </div>
@@ -186,13 +193,13 @@ export default async function CalendarPage({
 
       <div className="flex items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="h-3 w-3 rounded bg-orange-200"></div>
-          <span className="text-muted-foreground">Prazos de trabalhos</span>
+          <div className="h-3 w-3 rounded" style={{ background: "var(--tint-orange)" }}></div>
+          <span className="text-[var(--muted-foreground)]">Prazos de trabalhos</span>
         </div>
         {isStaff && (
           <div className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded bg-red-200"></div>
-            <span className="text-muted-foreground">Ausências de professores</span>
+            <div className="h-3 w-3 rounded" style={{ background: "var(--tint-red)" }}></div>
+            <span className="text-[var(--muted-foreground)]">Ausências de professores</span>
           </div>
         )}
       </div>

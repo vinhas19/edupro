@@ -7,6 +7,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   CLASS_DIRECTOR: "Diretor de Turma",
   TEACHER: "Professor",
   STUDENT: "Aluno",
+  GUARDIAN: "Encarregado de Educação",
 };
 
 export const ROLE_HIERARCHY: Record<Role, number> = {
@@ -16,6 +17,7 @@ export const ROLE_HIERARCHY: Record<Role, number> = {
   CLASS_DIRECTOR: 3,
   TEACHER: 2,
   STUDENT: 1,
+  GUARDIAN: 1,
 };
 
 export function hasRole(userRole: Role, requiredRole: Role): boolean {

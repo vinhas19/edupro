@@ -1,167 +1,183 @@
-import { Fragment } from "react";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { hasRole } from "@/lib/permissions";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatCard } from "@/components/ui/stat-card";
+import { ScheduleGrid } from "@/components/schedule/schedule-grid";
+import { ClassFilter } from "@/components/schedule/class-filter";
 import Link from "next/link";
-import { Pencil, CalendarRange } from "lucide-react";
+import { Pencil, CalendarRange, Calendar, BookOpen, MapPin, Printer } from "lucide-react";
 
-const DAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
-const TIME_SLOTS = [
-  "08:00", "08:50", "09:40", "10:40", "11:30",
-  "12:20", "13:10", "14:00", "14:50", "15:40", "16:30", "17:20",
-];
-
-const SUBJECT_COLORS = [
-  "bg-blue-100 border-blue-300 text-blue-800",
-  "bg-green-100 border-green-300 text-green-800",
-  "bg-purple-100 border-purple-300 text-purple-800",
-  "bg-orange-100 border-orange-300 text-orange-800",
-  "bg-pink-100 border-pink-300 text-pink-800",
-  "bg-teal-100 border-teal-300 text-teal-800",
-  "bg-yellow-100 border-yellow-300 text-yellow-800",
-  "bg-red-100 border-red-300 text-red-800",
-];
-
-export default async function SchedulePage() {
+export default async function SchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ classId?: string }>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   const { id: userId, role, schoolId } = session.user;
+  const { classId } = await searchParams;
+
+  const [school, timeSlots] = await Promise.all([
+    prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { dayStart: true, dayEnd: true, blockMinutes: true, breakMinutes: true },
+    }),
+    prisma.timeSlot.findMany({
+      where: { schoolId },
+      orderBy: { order: "asc" },
+      select: { startTime: true, endTime: true, label: true },
+    }),
+  ]);
+
+  const include = {
+    subject: { select: { id: true, name: true } },
+    teacher: { select: { name: true } },
+    room: { select: { name: true } },
+    class: { select: { name: true } },
+  } as const;
 
   let blocks: Awaited<ReturnType<typeof prisma.scheduleBlock.findMany>> = [];
+  let viewMode: "student" | "teacher" | "admin" = "admin";
+  let classes: { id: string; name: string; year: number; course: { code: string } }[] = [];
 
-  if (!hasRole(role, Role.TEACHER)) {
-    // Student — get their class schedule
+  if (role === Role.STUDENT) {
+    viewMode = "student";
     const enrollment = await prisma.enrollment.findFirst({
       where: { studentId: userId, status: "ACTIVE" },
     });
     if (enrollment) {
       blocks = await prisma.scheduleBlock.findMany({
         where: { classId: enrollment.classId },
-        include: {
-          subject: true,
-          room: true,
-          class: { include: { course: true } },
-        },
+        include,
         orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
       });
     }
-  } else if (role === Role.TEACHER) {
+  } else if (role === Role.TEACHER && !classId) {
+    viewMode = "teacher";
     blocks = await prisma.scheduleBlock.findMany({
       where: { teacherId: userId },
-      include: {
-        subject: true,
-        room: true,
-        class: { include: { course: true } },
-      },
+      include,
       orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
     });
   } else {
-    // Admin / Director — may filter by class
-    blocks = await prisma.scheduleBlock.findMany({
-      where: { class: { course: { schoolId } } },
-      include: {
-        subject: true,
-        room: true,
-        class: { include: { course: true } },
+    viewMode = "admin";
+    classes = await prisma.class.findMany({
+      where: {
+        course: { schoolId },
+        academicYear: { active: true },
       },
+      select: { id: true, name: true, year: true, course: { select: { code: true } } },
+      orderBy: [{ year: "asc" }, { name: "asc" }],
+    });
+
+    blocks = await prisma.scheduleBlock.findMany({
+      where: {
+        class: { course: { schoolId } },
+        ...(classId ? { classId } : {}),
+      },
+      include,
       orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
     });
   }
 
-  // Build color map per subject
-  const subjectIds = [...new Set(blocks.map((b) => b.subjectId))];
-  const colorMap = new Map(subjectIds.map((id, i) => [id, SUBJECT_COLORS[i % SUBJECT_COLORS.length]]));
-
-  // Group by day
-  const schedule: Record<number, typeof blocks> = {};
-  for (let d = 1; d <= 5; d++) schedule[d] = [];
-  blocks.forEach((b) => { schedule[b.dayOfWeek]?.push(b); });
+  const selectedClass = classId ? classes.find((c) => c.id === classId) : null;
+  const totalLessons = blocks.length;
+  const uniqueSubjects = new Set(blocks.map((b) => b.subjectId));
+  const uniqueRooms = new Set(blocks.map((b) => b.roomId).filter(Boolean));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+    <div className="space-y-5">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Horário</h1>
-          <p className="text-muted-foreground">
-            {hasRole(role, Role.SCHOOL_ADMIN) ? "Todos os horários" : "O meu horário semanal"}
-          </p>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--tint-red)] mb-1">
+            Horário
+          </div>
+          <h1 className="text-2xl sm:text-[28px] font-bold tracking-[-0.022em]">
+            {viewMode === "student"
+              ? "O meu horário semanal"
+              : viewMode === "teacher"
+                ? "O meu horário"
+                : selectedClass
+                  ? selectedClass.name
+                  : "Todos os horários"}
+          </h1>
+          {school && (
+            <p className="text-[12px] text-[var(--muted-foreground)] tabular-nums">
+              {school.dayStart}–{school.dayEnd} · blocos de {school.blockMinutes} min
+            </p>
+          )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {viewMode === "admin" && classes.length > 0 && (
+            <ClassFilter classes={classes} defaultValue={classId ?? "ALL"} />
+          )}
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/calendar"><CalendarRange className="mr-1.5 h-3.5 w-3.5" />Calendário</Link>
+            <Link href={`/dashboard/schedule/print${classId ? `?classId=${classId}` : ""}`} target="_blank">
+              <Printer className="mr-1.5 h-3.5 w-3.5" />Imprimir
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard/calendar">
+              <CalendarRange className="mr-1.5 h-3.5 w-3.5" />Calendário
+            </Link>
           </Button>
           {hasRole(role, Role.SCHOOL_ADMIN) && (
             <Button size="sm" asChild>
-              <Link href="/dashboard/schedule/edit"><Pencil className="mr-1.5 h-3.5 w-3.5" />Editar</Link>
+              <Link href={`/dashboard/schedule/edit${classId ? `?classId=${classId}` : ""}`}>
+                <Pencil className="mr-1.5 h-3.5 w-3.5" />Editar
+              </Link>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Weekly grid */}
-      <Card>
-        <CardContent className="pt-6 overflow-x-auto">
-          <div className="grid min-w-[700px]" style={{ gridTemplateColumns: "80px repeat(5, 1fr)" }}>
-            {/* Header */}
-            <div className="border-b pb-2" />
-            {DAYS.map((day) => (
-              <div key={day} className="border-b pb-2 text-center text-sm font-semibold">
-                {day}
-              </div>
-            ))}
-
-            {/* Time rows */}
-            {TIME_SLOTS.map((time) => (
-              <Fragment key={`row-${time}`}>
-                <div className="py-2 pr-3 text-xs text-muted-foreground text-right border-b">
-                  {time}
-                </div>
-                {[1, 2, 3, 4, 5].map((day) => {
-                  const block = schedule[day]?.find(
-                    (b) => b.startTime === time
-                  );
-                  return (
-                    <div key={`${day}-${time}`} className="border-b border-l p-1 min-h-[40px]">
-                      {block && (
-                        <div
-                          className={`rounded border px-2 py-1 text-xs ${colorMap.get(block.subjectId) ?? ""}`}
-                        >
-                          <p className="font-semibold line-clamp-1">{(block as any).subject?.name}</p>
-                          <p className="text-[10px] opacity-75">
-                            {block.startTime}–{block.endTime}
-                            {(block as any).room && ` · ${(block as any).room.name}`}
-                          </p>
-                          {hasRole(role, Role.TEACHER) && (block as any).class && (
-                            <p className="text-[10px] opacity-75">{(block as any).class.name}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </Fragment>
-            ))}
+      <div className="bg-[var(--card)] rounded-[12px] p-4 shadow-[var(--card-shadow)]">
+        {blocks.length === 0 ? (
+          <div className="text-center py-12 text-[13px] text-[var(--muted-foreground)]">
+            {viewMode === "admin" && !selectedClass && !classId
+              ? "Sem aulas registadas. Configure horários em Editar."
+              : "Sem aulas no horário."}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-2">
-        {subjectIds.slice(0, 8).map((id) => {
-          const block = blocks.find((b) => b.subjectId === id);
-          return (
-            <Badge key={id} className={colorMap.get(id)} variant="outline">
-              {(block as any)?.subject?.name}
-            </Badge>
-          );
-        })}
+        ) : (
+          <ScheduleGrid
+            blocks={blocks as any}
+            showClass={viewMode !== "student"}
+            dayStart={school?.dayStart ?? "08:00"}
+            dayEnd={school?.dayEnd ?? "18:30"}
+            timeSlots={timeSlots}
+          />
+        )}
       </div>
+
+      {blocks.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <StatCard
+            title="Aulas/semana"
+            value={totalLessons}
+            icon={Calendar}
+            tint="var(--tint-red)"
+            description="blocos lectivos"
+          />
+          <StatCard
+            title="Disciplinas"
+            value={uniqueSubjects.size}
+            icon={BookOpen}
+            tint="var(--tint-purple)"
+            description="distintas"
+          />
+          <StatCard
+            title="Salas"
+            value={uniqueRooms.size}
+            icon={MapPin}
+            tint="var(--tint-teal)"
+            description="utilizadas"
+          />
+        </div>
+      )}
     </div>
   );
 }

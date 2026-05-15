@@ -11,29 +11,42 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const school = await prisma.school.findUnique({
     where: { id: session.user.schoolId },
   });
-
   if (!school) redirect("/login");
 
-  const unreadCount = await prisma.notificationRecipient.count({
-    where: { recipientId: session.user.id, readAt: null },
-  });
+  const [unreadNotifications, unreadMessages] = await Promise.all([
+    prisma.notificationRecipient.count({
+      where: { recipientId: session.user.id, readAt: null },
+    }),
+    prisma.message.count({
+      where: {
+        conversation: {
+          OR: [{ user1Id: session.user.id }, { user2Id: session.user.id }],
+        },
+        senderId: { not: session.user.id },
+        readAt: null,
+      },
+    }),
+  ]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-[100dvh] overflow-hidden bg-[var(--background)]">
       <Sidebar
         userRole={session.user.role}
+        userName={session.user.name}
+        userEmail={session.user.email}
         schoolName={school.name}
-        schoolLogo={school.logoUrl}
+        unreadMessages={unreadMessages}
+        unreadNotifications={unreadNotifications}
       />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         <Topbar
           userName={session.user.name}
           userEmail={session.user.email}
           userRole={session.user.role}
-          userImage={session.user.image}
-          unreadCount={unreadCount}
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-transparent p-4 sm:p-6 lg:p-7">
+          {children}
+        </main>
       </div>
     </div>
   );

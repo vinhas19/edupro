@@ -4,26 +4,42 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Check, X, Clock, AlertCircle, Save } from "lucide-react";
+import { Check, X, Clock, AlertCircle, Save, CheckCheck } from "lucide-react";
 import { AttendanceStatus } from "@prisma/client";
+import { cn } from "@/lib/utils";
 
 type Student = { id: string; name: string; email: string };
 
-const STATUS_OPTIONS: { value: AttendanceStatus; label: string; icon: React.ReactNode; className: string }[] = [
-  { value: "PRESENT", label: "Presente", icon: <Check className="h-3.5 w-3.5" />, className: "bg-green-100 text-green-700 border-green-200 hover:bg-green-200" },
-  { value: "ABSENT", label: "Falta", icon: <X className="h-3.5 w-3.5" />, className: "bg-red-100 text-red-700 border-red-200 hover:bg-red-200" },
-  { value: "JUSTIFIED", label: "Justificada", icon: <AlertCircle className="h-3.5 w-3.5" />, className: "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200" },
-  { value: "LATE", label: "Atraso", icon: <Clock className="h-3.5 w-3.5" />, className: "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200" },
+// Apple tints for the 4-state segmented control
+const STATUS_OPTIONS: {
+  value: AttendanceStatus;
+  short: string;
+  long: string;
+  icon: React.ElementType;
+  tint: string;
+  textOn: string;
+}[] = [
+  { value: "PRESENT",   short: "P", long: "Presente",    icon: Check,        tint: "var(--tint-green)",  textOn: "#fff" },
+  { value: "ABSENT",    short: "F", long: "Falta",       icon: X,            tint: "var(--tint-red)",    textOn: "#fff" },
+  { value: "LATE",      short: "A", long: "Atraso",      icon: Clock,        tint: "var(--tint-orange)", textOn: "#fff" },
+  { value: "JUSTIFIED", short: "J", long: "Justificada", icon: AlertCircle,  tint: "var(--tint-blue)",   textOn: "#fff" },
 ];
 
-const STATUS_BADGE: Record<AttendanceStatus, string> = {
-  PRESENT: "bg-green-100 text-green-700 border-green-200",
-  ABSENT: "bg-red-100 text-red-700 border-red-200",
-  JUSTIFIED: "bg-blue-100 text-blue-700 border-blue-200",
-  LATE: "bg-orange-100 text-orange-700 border-orange-200",
-};
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase();
+}
+
+const STUDENT_TINTS = [
+  "var(--tint-pink)", "var(--tint-blue)", "var(--tint-purple)",
+  "var(--tint-orange)", "var(--tint-green)", "var(--tint-teal)",
+  "var(--tint-red)", "var(--tint-indigo)", "var(--tint-cyan)",
+];
 
 export function AttendanceForm({
   lessonId,
@@ -38,17 +54,17 @@ export function AttendanceForm({
   const [records, setRecords] = useState<Record<string, AttendanceStatus>>(existingRecords);
   const [saving, setSaving] = useState(false);
 
-  const markAll = (status: AttendanceStatus) => {
+  function markAll(status: AttendanceStatus) {
     const all: Record<string, AttendanceStatus> = {};
     students.forEach((s) => (all[s.id] = status));
     setRecords(all);
-  };
+  }
 
-  const toggle = (studentId: string, status: AttendanceStatus) => {
+  function toggle(studentId: string, status: AttendanceStatus) {
     setRecords((prev) => ({ ...prev, [studentId]: status }));
-  };
+  }
 
-  const save = async () => {
+  async function save() {
     setSaving(true);
     try {
       const res = await fetch("/api/attendance", {
@@ -60,7 +76,7 @@ export function AttendanceForm({
         }),
       });
       if (!res.ok) throw new Error();
-      toast.success("Presenças registadas com sucesso");
+      toast.success("Presenças registadas");
       router.push("/dashboard/lessons");
       router.refresh();
     } catch {
@@ -68,78 +84,127 @@ export function AttendanceForm({
     } finally {
       setSaving(false);
     }
-  };
+  }
 
-  const presentCount = Object.values(records).filter((s) => s === "PRESENT").length;
-  const absentCount = Object.values(records).filter((s) => s === "ABSENT" || s === "JUSTIFIED").length;
+  const counts = STATUS_OPTIONS.map((o) => ({
+    ...o,
+    count: Object.values(records).filter((s) => s === o.value).length,
+  }));
+  const recorded = Object.keys(records).length;
+  const pendingCount = students.length - recorded;
+  const pct = students.length > 0 ? Math.round((recorded / students.length) * 100) : 0;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-            {presentCount} presentes
-          </Badge>
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-            {absentCount} faltas
-          </Badge>
-          <Badge variant="outline">
-            {students.length - Object.keys(records).length} por registar
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Marcar todos:</span>
-          {STATUS_OPTIONS.map((opt) => (
-            <Button
-              key={opt.value}
-              variant="outline"
-              size="sm"
-              className={`text-xs ${opt.className}`}
-              onClick={() => markAll(opt.value)}
+      {/* Summary + toolbar */}
+      <div className="bg-[var(--card)] rounded-[12px] shadow-[var(--card-shadow)] p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+          {counts.map((c) => (
+            <div
+              key={c.value}
+              className="flex items-center gap-2.5 rounded-[10px] p-2.5"
+              style={{ background: `color-mix(in srgb, ${c.tint} 12%, transparent)` }}
             >
-              {opt.icon}
-              <span className="ml-1">{opt.label}</span>
-            </Button>
+              <span
+                className="h-7 w-7 rounded-[7px] flex items-center justify-center text-white shrink-0"
+                style={{ background: c.tint }}
+              >
+                <c.icon className="h-3.5 w-3.5" strokeWidth={2.2} />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[20px] font-bold tabular-nums leading-none">{c.count}</div>
+                <div className="text-[11px] text-[var(--muted-foreground)]">{c.long}</div>
+              </div>
+            </div>
           ))}
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1">
+            <div className="text-[11px] text-[var(--muted-foreground)] mb-1 tabular-nums">
+              {recorded}/{students.length} alunos · {pendingCount} por registar
+            </div>
+            <div className="h-1.5 rounded-full bg-[var(--muted)] overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${pct}%`, background: "var(--tint-blue)" }}
+              />
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => markAll("PRESENT")}
+            className="shrink-0"
+          >
+            <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
+            Todos presentes
+          </Button>
         </div>
       </div>
 
-      <div className="space-y-2">
+      {/* Student rows */}
+      <div className="bg-[var(--card)] rounded-[12px] shadow-[var(--card-shadow)] overflow-hidden">
         {students.map((student, idx) => {
           const current = records[student.id];
+          const tint = STUDENT_TINTS[idx % STUDENT_TINTS.length];
           return (
-            <Card key={student.id}>
-              <CardContent className="flex items-center gap-3 py-3">
-                <span className="text-sm text-muted-foreground w-6 text-right">{idx + 1}</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{student.name}</p>
-                  <p className="text-xs text-muted-foreground">{student.email}</p>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {STATUS_OPTIONS.map((opt) => (
+            <div
+              key={student.id}
+              className={cn(
+                "flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3",
+                idx > 0 && "border-t border-[var(--separator)]"
+              )}
+            >
+              {/* Number + avatar + name (always grouped) */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <span className="text-[11px] font-mono font-semibold text-[var(--muted-foreground)] tabular-nums w-5 text-right shrink-0">
+                  {idx + 1}
+                </span>
+                <span
+                  className="h-7 w-7 rounded-full flex items-center justify-center text-white text-[10px] font-semibold shrink-0"
+                  style={{ background: tint }}
+                >
+                  {getInitials(student.name)}
+                </span>
+                <p className="text-[13px] font-medium truncate flex-1">{student.name}</p>
+              </div>
+
+              {/* Segmented control */}
+              <div className="flex items-center gap-1 sm:gap-1.5 sm:shrink-0 sm:justify-end">
+                {STATUS_OPTIONS.map((opt) => {
+                  const Icon = opt.icon;
+                  const active = current === opt.value;
+                  return (
                     <button
                       key={opt.value}
                       onClick={() => toggle(student.id, opt.value)}
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                        current === opt.value
-                          ? opt.className + " ring-2 ring-offset-1 ring-current"
-                          : "bg-muted/40 text-muted-foreground border-transparent hover:bg-muted"
-                      }`}
+                      className={cn(
+                        "flex-1 sm:flex-none flex items-center justify-center gap-1 rounded-[6px]",
+                        "h-9 sm:h-7 px-2 sm:px-2.5",
+                        "text-[11px] font-semibold transition-colors",
+                        active
+                          ? "text-white shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.1)]"
+                          : "bg-[var(--muted)] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+                      )}
+                      style={active ? { background: opt.tint } : undefined}
+                      aria-label={opt.long}
+                      title={opt.long}
                     >
-                      {opt.icon}
-                      <span>{opt.label}</span>
+                      <Icon className="h-3.5 w-3.5" strokeWidth={2.2} />
+                      <span className="hidden sm:inline">{opt.long}</span>
                     </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
 
-      <div className="flex justify-end pt-2">
-        <Button onClick={save} disabled={saving} className="gap-2">
-          <Save className="h-4 w-4" />
+      <div className="flex justify-end pt-2 sticky bottom-0">
+        <Button onClick={save} disabled={saving}>
+          <Save className="mr-2 h-4 w-4" />
           {saving ? "A guardar..." : "Guardar Presenças"}
         </Button>
       </div>

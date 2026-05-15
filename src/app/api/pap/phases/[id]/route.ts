@@ -11,6 +11,7 @@ const schema = z.object({
   fileUrl: z.string().nullable().optional(),
   status: z.enum(["PENDING", "IN_PROGRESS", "SUBMITTED", "APPROVED", "REJECTED"]).optional(),
   notes: z.string().nullable().optional(),
+  progress: z.number().int().min(0).max(100).optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -41,6 +42,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       ...(parsed.data.fileUrl !== undefined ? { fileUrl: parsed.data.fileUrl } : {}),
       ...(parsed.data.status ? { status: parsed.data.status as PhaseStatus } : {}),
       ...(parsed.data.notes !== undefined ? { notes: parsed.data.notes } : {}),
+      ...(parsed.data.progress !== undefined ? { progress: parsed.data.progress } : {}),
     },
   });
 

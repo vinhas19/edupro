@@ -18,6 +18,7 @@ const ROLE_LABELS: Record<Role, string> = {
   CLASS_DIRECTOR: "Diretor de Turma",
   TEACHER: "Professor",
   STUDENT: "Aluno",
+  GUARDIAN: "Encarregado",
 };
 
 const ROLE_COLORS: Record<Role, string> = {
@@ -27,6 +28,7 @@ const ROLE_COLORS: Record<Role, string> = {
   CLASS_DIRECTOR: "bg-teal-100 text-teal-700 border-teal-200",
   TEACHER: "bg-green-100 text-green-700 border-green-200",
   STUDENT: "bg-orange-100 text-orange-700 border-orange-200",
+  GUARDIAN: "bg-pink-100 text-pink-700 border-pink-200",
 };
 
 export default async function UsersPage() {

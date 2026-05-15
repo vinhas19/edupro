@@ -95,7 +95,19 @@ export default async function PapDetailPage({ params }: { params: Promise<{ id: 
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Fases</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Fases</CardTitle>
+            {pap.phases.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-[var(--muted-foreground)]">Total</span>
+                <span className="text-[13px] font-semibold tabular-nums">
+                  {Math.round(pap.phases.reduce((s, p) => s + p.progress, 0) / pap.phases.length)}%
+                </span>
+              </div>
+            )}
+          </div>
+        </CardHeader>
         <CardContent className="space-y-2">
           {pap.phases.map((p) => (
             <PhaseRow
@@ -105,6 +117,7 @@ export default async function PapDetailPage({ params }: { params: Promise<{ id: 
               dueDate={p.dueDate}
               submittedAt={p.submittedAt}
               status={p.status}
+              progress={p.progress}
               canEdit={canEdit || isAdvisor}
             />
           ))}

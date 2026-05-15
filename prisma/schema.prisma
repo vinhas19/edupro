@@ -18,6 +18,13 @@ model School {
   email     String?
   plan      Plan     @default(FREE)
   active    Boolean  @default(true)
+
+  // Schedule configuration (per school)
+  dayStart       String  @default("08:00")   // "HH:MM" — primeiro bloco
+  dayEnd         String  @default("18:30")   // "HH:MM" — fim do último bloco
+  blockMinutes   Int     @default(50)        // duração de cada bloco
+  breakMinutes   Int     @default(10)        // intervalo entre blocos
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -27,8 +34,22 @@ model School {
   documents     Document[]
   notifications Notification[]
   academicYears AcademicYear[]
+  timeSlots     TimeSlot[]
 
   @@map("schools")
+}
+
+model TimeSlot {
+  id        String  @id @default(cuid())
+  schoolId  String
+  school    School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  order     Int     @default(0)
+  startTime String                          // "HH:MM"
+  endTime   String                          // "HH:MM"
+  label     String?                         // opcional, ex. "1º bloco", "Almoço"
+
+  @@unique([schoolId, order])
+  @@map("time_slots")
 }
 
 enum Plan {
@@ -51,6 +72,7 @@ model User {
   active        Boolean   @default(true)
   schoolId      String
   school        School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  iCalToken     String?   // token para feed iCal pessoal (unique via @@index abaixo)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -84,10 +106,18 @@ model User {
   absenceCreatedBy      TeacherAbsence[] @relation("AbsenceCreator")
   scheduleBlocks        ScheduleBlock[] @relation("ScheduleTeacher")
 
+  // Encarregado de educação
+  wardLinks      GuardianLink[] @relation("GuardianOfStudent")
+  guardianLinks  GuardianLink[] @relation("StudentGuardian")
+
+  pushSubscriptions PushSubscription[]
+  auditLogs         AuditLog[]
+
   accounts Account[]
   sessions Session[]
 
   @@unique([email, schoolId])
+  @@index([iCalToken])
   @@map("users")
 }
 
@@ -98,6 +128,49 @@ enum Role {
   CLASS_DIRECTOR
   TEACHER
   STUDENT
+  GUARDIAN
+}
+
+// Encarregado de educação ↔ aluno (m:n)
+model GuardianLink {
+  id         String @id @default(cuid())
+  guardianId String
+  guardian   User   @relation("GuardianOfStudent", fields: [guardianId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    User   @relation("StudentGuardian",   fields: [studentId],  references: [id], onDelete: Cascade)
+  kind       String?  // "Mãe", "Pai", "Tutor"...
+  createdAt  DateTime @default(now())
+
+  @@unique([guardianId, studentId])
+  @@map("guardian_links")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  schoolId  String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String   // ex. "subject.update", "grade.update", "user.delete"
+  entity    String   // ex. "Subject", "StudentModuleProgress"
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@map("push_subscriptions")
 }
 
 model Account {
@@ -371,6 +444,7 @@ model ScheduleBlock {
   endTime    String
   validFrom  DateTime?
   validUntil DateTime?
+  meetingUrl String?   // URL Zoom/Meet/Teams para aula online
 
   lessons       Lesson[]
   substitutions Substitution[]
@@ -559,6 +633,7 @@ model PapPhase {
   fileUrl     String?
   status      PhaseStatus  @default(PENDING)
   notes       String?
+  progress    Int          @default(0)  // 0..100
 
   @@map("pap_phases")
 }

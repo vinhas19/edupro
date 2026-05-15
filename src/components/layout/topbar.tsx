@@ -1,86 +1,155 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Bell, LogOut, User, ChevronDown } from "lucide-react";
+import { Menu, Sun, Moon, LogOut, User, ChevronDown } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { ROLE_LABELS } from "@/lib/permissions";
 import { Role } from "@prisma/client";
-import { useRouter } from "next/navigation";
+import { ROLE_LABELS } from "@/lib/permissions";
+import { TweaksPopover } from "@/components/layout/tweaks-popover";
+
+// Map first-segment of pathname to a human-readable title (PT-PT)
+const TITLE_MAP: Record<string, string> = {
+  "/dashboard": "Painel",
+  "/dashboard/schedule": "Horário",
+  "/dashboard/calendar": "Calendário",
+  "/dashboard/messages": "Mensagens",
+  "/dashboard/notifications": "Comunicações",
+  "/dashboard/lessons": "Sumários",
+  "/dashboard/attendance": "Assiduidade",
+  "/dashboard/modules": "Notas & Módulos",
+  "/dashboard/subjects": "Disciplinas",
+  "/dashboard/courses": "Cursos & Turmas",
+  "/dashboard/classes": "Turmas",
+  "/dashboard/fct": "FCT",
+  "/dashboard/pap": "PAP",
+  "/dashboard/documents": "Documentos",
+  "/dashboard/substitutions": "Substituições",
+  "/dashboard/users": "Utilizadores",
+  "/dashboard/settings": "Definições",
+  "/dashboard/profile": "Perfil",
+};
+
+function getTitle(pathname: string): string {
+  // Find best match (longest prefix)
+  const entries = Object.entries(TITLE_MAP).sort((a, b) => b[0].length - a[0].length);
+  for (const [prefix, title] of entries) {
+    if (pathname === prefix || pathname.startsWith(prefix + "/")) return title;
+  }
+  return "EduPro";
+}
 
 interface TopbarProps {
   userName: string;
   userEmail: string;
   userRole: Role;
-  userImage?: string | null;
-  unreadCount?: number;
 }
 
-export function Topbar({ userName, userEmail, userRole, userImage, unreadCount = 0 }: TopbarProps) {
+export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
+  const pathname = usePathname();
   const router = useRouter();
+  const [isDark, setIsDark] = useState(false);
+
+  // Sync dark mode state with document
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  function toggleDark() {
+    const next = !isDark;
+    setIsDark(next);
+    if (next) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("edupro:theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("edupro:theme", "light");
+    }
+  }
+
+  function openSidebar() {
+    window.dispatchEvent(new CustomEvent("edupro:open-sidebar"));
+  }
+
+  const title = getTitle(pathname);
   const initials = userName
     .split(" ")
+    .filter(Boolean)
     .slice(0, 2)
     .map((n) => n[0])
     .join("")
     .toUpperCase();
 
   return (
-    <header className="flex h-16 items-center justify-end border-b bg-white px-6 gap-3">
-      {/* Notifications */}
-      <Button variant="ghost" size="icon" className="relative" onClick={() => router.push("/dashboard/notifications")}>
-        <Bell className="h-4 w-4" />
-        {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        )}
-      </Button>
+    <header className="h-[52px] flex items-center gap-2 px-3 sm:px-5 lg:px-7 border-b border-[var(--separator)] bg-[var(--card)] shrink-0">
+      {/* Mobile hamburger */}
+      <button
+        onClick={openSidebar}
+        aria-label="Abrir menu"
+        className="lg:hidden h-9 w-9 rounded-[6px] flex items-center justify-center hover:bg-[var(--muted)]"
+      >
+        <Menu className="h-4 w-4" />
+      </button>
 
-      {/* User menu */}
+      <h2 className="text-[15px] sm:text-[17px] font-semibold tracking-[-0.012em] truncate">
+        {title}
+      </h2>
+
+      <div className="flex-1" />
+
+      {/* Tweaks (accent + density) */}
+      <TweaksPopover />
+
+      {/* Dark mode toggle */}
+      <button
+        onClick={toggleDark}
+        aria-label={isDark ? "Modo claro" : "Modo escuro"}
+        className="h-9 w-9 rounded-[6px] flex items-center justify-center hover:bg-[var(--muted)] transition-colors"
+      >
+        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      </button>
+
+      {/* User menu (desktop shows full, mobile shows just avatar) */}
       <DropdownMenu>
-        <DropdownMenuTrigger
-          className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm hover:bg-muted transition-colors outline-none"
-        >
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={userImage ?? undefined} />
-            <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden sm:flex flex-col items-start">
-            <span className="text-sm font-medium leading-none">{userName}</span>
-            <span className="text-xs text-muted-foreground">{ROLE_LABELS[userRole]}</span>
+        <DropdownMenuTrigger className="flex items-center gap-2 rounded-[6px] px-1 sm:px-2 py-1 hover:bg-[var(--muted)] transition-colors outline-none">
+          <div
+            className="h-7 w-7 rounded-full flex items-center justify-center text-white text-[11px] font-semibold shrink-0"
+            style={{ background: "var(--tint-indigo)" }}
+          >
+            {initials || "U"}
           </div>
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          <div className="hidden md:flex flex-col items-start leading-tight">
+            <span className="text-[13px] font-medium">{userName}</span>
+            <span className="text-[11px] text-[var(--muted-foreground)]">
+              {ROLE_LABELS[userRole]}
+            </span>
+          </div>
+          <ChevronDown className="hidden md:block h-3 w-3 text-[var(--muted-foreground)]" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>
-            <div>
-              <p className="font-medium">{userName}</p>
-              <p className="text-xs text-muted-foreground">{userEmail}</p>
-              <Badge variant="secondary" className="mt-1 text-xs">
+            <div className="leading-tight">
+              <p className="text-[13px] font-medium">{userName}</p>
+              <p className="text-[11px] text-[var(--muted-foreground)]">{userEmail}</p>
+              <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--muted)]">
                 {ROLE_LABELS[userRole]}
-              </Badge>
+              </span>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
-            <User className="mr-2 h-4 w-4" />
-            O Meu Perfil
+            <User className="mr-2 h-4 w-4" />O Meu Perfil
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="text-red-600 focus:text-red-600"
+            className="text-[var(--destructive)] focus:text-[var(--destructive)]"
             onClick={() => signOut({ callbackUrl: "/login" })}
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Terminar Sessão
+            <LogOut className="mr-2 h-4 w-4" />Terminar Sessão
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

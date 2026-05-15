@@ -1,21 +1,14 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { ProfileForm } from "@/components/profile/profile-form";
-
-const ROLE_LABELS: Record<Role, string> = {
-  SUPER_ADMIN: "Super Admin",
-  SCHOOL_ADMIN: "Administrador",
-  COURSE_DIRECTOR: "Diretor de Curso",
-  CLASS_DIRECTOR: "Diretor de Turma",
-  TEACHER: "Professor",
-  STUDENT: "Aluno",
-};
+import { NotificationsToggle } from "@/components/settings/notifications-toggle";
+import { CalendarTokenSection } from "@/components/profile/calendar-token-section";
+import { ROLE_LABELS } from "@/lib/permissions";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -82,6 +75,27 @@ export default async function ProfilePage() {
                 <span className="text-sm text-muted-foreground">Domínio</span>
                 <code className="text-xs bg-muted px-2 py-0.5 rounded">{user.school.slug}.edupro.pt</code>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Notificações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <NotificationsToggle publicKey={process.env.VAPID_PUBLIC_KEY ?? null} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Sincronização com calendário</CardTitle>
+              <p className="text-[12px] text-muted-foreground">
+                Subscreve o teu horário no Google/Apple Calendar. Mantém o link privado.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <CalendarTokenSection initialToken={user.iCalToken} />
             </CardContent>
           </Card>
         </div>

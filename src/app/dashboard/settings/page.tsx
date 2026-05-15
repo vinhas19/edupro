@@ -5,6 +5,8 @@ import { Role, Plan } from "@prisma/client";
 import { hasRole } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ScheduleConfigForm } from "@/components/settings/schedule-config-form";
+import { TimeSlotsEditor } from "@/components/settings/time-slots-editor";
 
 const PLAN_LABELS: Record<Plan, string> = {
   FREE: "Gratuito",
@@ -40,6 +42,12 @@ export default async function SettingsPage() {
   });
 
   if (!school) redirect("/dashboard");
+
+  const timeSlots = await prisma.timeSlot.findMany({
+    where: { schoolId },
+    orderBy: { order: "asc" },
+    select: { id: true, startTime: true, endTime: true, label: true },
+  });
 
   const currentYear = await prisma.academicYear.findFirst({
     where: { schoolId, active: true },
@@ -121,6 +129,45 @@ export default async function SettingsPage() {
             ) : (
               <p className="text-sm text-muted-foreground">Nenhum ano letivo ativo</p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Configuração do horário</CardTitle>
+            <p className="text-[12px] text-muted-foreground">
+              Define a hora de entrada/saída e a duração dos blocos lectivos. Aplica-se a todas as turmas.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ScheduleConfigForm
+              initial={{
+                dayStart: school.dayStart,
+                dayEnd: school.dayEnd,
+                blockMinutes: school.blockMinutes,
+                breakMinutes: school.breakMinutes,
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Blocos lectivos</CardTitle>
+            <p className="text-[12px] text-muted-foreground">
+              Define manualmente cada bloco do dia (hora de entrada e hora de saída). Estes blocos aparecem na coluna de horas do horário.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <TimeSlotsEditor
+              initial={timeSlots}
+              defaults={{
+                dayStart: school.dayStart,
+                dayEnd: school.dayEnd,
+                blockMinutes: school.blockMinutes,
+                breakMinutes: school.breakMinutes,
+              }}
+            />
           </CardContent>
         </Card>
       </div>

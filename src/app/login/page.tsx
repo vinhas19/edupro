@@ -55,16 +55,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-[var(--background)] p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="flex flex-col items-center gap-2">
-          <div className="flex items-center gap-2 text-blue-700">
-            <GraduationCap className="h-10 w-10" />
-            <span className="text-3xl font-bold">EduPro</span>
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="h-14 w-14 rounded-[14px] flex items-center justify-center text-white"
+            style={{ background: "linear-gradient(135deg, var(--tint-blue), #0058c9)", boxShadow: "var(--card-shadow)" }}
+          >
+            <GraduationCap className="h-7 w-7" strokeWidth={1.8} />
           </div>
-          <p className="text-sm text-muted-foreground text-center">
-            Plataforma de Gestão para Escolas Profissionais
-          </p>
+          <div className="text-center">
+            <h1 className="text-[28px] font-bold tracking-[-0.022em]">EduPro</h1>
+            <p className="text-[14px] text-[var(--muted-foreground)]">
+              Plataforma de gestão escolar
+            </p>
+          </div>
         </div>
 
         <Card className="shadow-lg">

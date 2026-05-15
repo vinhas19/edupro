@@ -5,7 +5,8 @@ import { Role } from "@prisma/client";
 import { hasRole, COMPONENT_LABELS } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Clock, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Clock, Users, Plus, Pencil } from "lucide-react";
 import Link from "next/link";
 
 export default async function SubjectsPage() {
@@ -37,9 +38,18 @@ export default async function SubjectsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Disciplinas</h1>
-        <p className="text-muted-foreground">{subjects.length} disciplinas</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-[-0.022em]">Disciplinas</h1>
+          <p className="text-muted-foreground text-sm">{subjects.length} disciplinas</p>
+        </div>
+        {hasRole(role, Role.SCHOOL_ADMIN) && (
+          <Button size="sm" asChild>
+            <Link href="/dashboard/subjects/new">
+              <Plus className="mr-1.5 h-3.5 w-3.5" />Nova disciplina
+            </Link>
+          </Button>
+        )}
       </div>
 
       {subjects.length === 0 ? (
@@ -47,7 +57,18 @@ export default async function SubjectsPage() {
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
             <p className="font-medium">Sem disciplinas</p>
-            <p className="text-sm text-muted-foreground">Não tem disciplinas atribuídas.</p>
+            <p className="text-sm text-muted-foreground">
+              {hasRole(role, Role.SCHOOL_ADMIN)
+                ? "Crie a primeira disciplina para começar."
+                : "Não tem disciplinas atribuídas."}
+            </p>
+            {hasRole(role, Role.SCHOOL_ADMIN) && (
+              <Button size="sm" asChild className="mt-4">
+                <Link href="/dashboard/subjects/new">
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />Nova disciplina
+                </Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -64,9 +85,18 @@ export default async function SubjectsPage() {
                       </Link>
                     </p>
                   </div>
-                  <Badge variant="outline" className="shrink-0 text-xs">
-                    {COMPONENT_LABELS[subject.component]}
-                  </Badge>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Badge variant="outline" className="text-xs">
+                      {COMPONENT_LABELS[subject.component]}
+                    </Badge>
+                    {hasRole(role, Role.SCHOOL_ADMIN) && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" asChild>
+                        <Link href={`/dashboard/subjects/${subject.id}/edit`} aria-label="Editar disciplina">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
