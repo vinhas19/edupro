@@ -36,6 +36,13 @@ export async function POST(req: Request) {
   const now = new Date();
   const isLate = post.dueDate ? now > post.dueDate : false;
 
+  if (isLate && !post.allowLate) {
+    return NextResponse.json(
+      { error: "O prazo desta tarefa já passou e o professor não permite entregas atrasadas." },
+      { status: 403 },
+    );
+  }
+
   const submission = await prisma.submission.upsert({
     where: { postId_studentId: { postId: parsed.data.postId, studentId: session.user.id } },
     create: {

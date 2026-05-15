@@ -112,6 +112,7 @@ model User {
 
   pushSubscriptions PushSubscription[]
   auditLogs         AuditLog[]
+  foldersCreated    Folder[]          @relation("FolderCreator")
 
   accounts Account[]
   sessions Session[]
@@ -272,6 +273,7 @@ model Class {
   classroomTopics    ClassroomTopic[]
   classroomPosts     ClassroomPost[]
   files              File[]
+  folders            Folder[]
   substitutions      Substitution[]
 
   @@map("classes")
@@ -316,6 +318,7 @@ model Subject {
   lessons            Lesson[]
   classroomPosts     ClassroomPost[]
   files              File[]
+  folders            Folder[]
   substitutions      Substitution[]
 
   @@map("subjects")
@@ -340,6 +343,9 @@ model Module {
   order       Int     @default(0)
 
   studentProgress StudentModuleProgress[]
+  files           File[]
+  folders         Folder[]
+  classroomPosts  ClassroomPost[]
 
   @@map("modules")
 }
@@ -785,6 +791,10 @@ model File {
   class      Class?         @relation(fields: [classId], references: [id], onDelete: SetNull)
   subjectId  String?
   subject    Subject?       @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  moduleId   String?
+  module     Module?        @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  folderId   String?
+  folder     Folder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
   postId     String?
   post       ClassroomPost? @relation("PostAttachments", fields: [postId], references: [id], onDelete: Cascade)
   submissionId String?
@@ -794,7 +804,32 @@ model File {
   @@index([ownerId])
   @@index([visibility])
   @@index([classId])
+  @@index([moduleId])
+  @@index([folderId])
   @@map("files")
+}
+
+// Sub-pastas livres dentro de um módulo (criadas por professores/DT/admin)
+model Folder {
+  id          String   @id @default(cuid())
+  name        String
+  classId     String
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId   String?
+  subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  moduleId    String?
+  module      Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  parentId    String?
+  parent      Folder?  @relation("FolderParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[] @relation("FolderParent")
+  createdById String
+  createdBy   User     @relation("FolderCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  files       File[]
+
+  @@index([classId, subjectId, moduleId])
+  @@map("folders")
 }
 
 enum FileVisibility {
@@ -829,6 +864,8 @@ model ClassroomPost {
   topic       ClassroomTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
   subjectId   String?
   subject     Subject?        @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  moduleId    String?
+  module      Module?         @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   authorId    String
   author      User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
   type        PostType        @default(ANNOUNCEMENT)
@@ -836,6 +873,8 @@ model ClassroomPost {
   content     String?
   dueDate     DateTime?
   maxGrade    Float?
+  countsForModule Boolean     @default(false)  // Se TRUE → nota da tarefa propaga para o módulo
+  allowLate       Boolean     @default(true)   // Se FALSE → bloqueia entregas após o prazo
   published   Boolean         @default(true)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt

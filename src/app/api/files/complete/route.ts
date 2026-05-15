@@ -20,6 +20,8 @@ const schema = z.object({
   ]),
   classId: z.string().optional(),
   subjectId: z.string().optional(),
+  moduleId: z.string().optional(),
+  folderId: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -46,6 +48,8 @@ export async function POST(req: Request) {
       visibility: parsed.data.visibility as FileVisibility,
       classId: parsed.data.classId,
       subjectId: parsed.data.subjectId,
+      moduleId: parsed.data.moduleId,
+      folderId: parsed.data.folderId,
     },
   });
 

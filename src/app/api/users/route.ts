@@ -15,6 +15,7 @@ const schema = z.object({
     "CLASS_DIRECTOR",
     "TEACHER",
     "STUDENT",
+    "GUARDIAN",
   ]),
   password: z.string().min(8),
 });

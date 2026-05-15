@@ -11,7 +11,7 @@ import {
   Briefcase, Award, FolderOpen, Bell, Settings,
   GraduationCap, BarChart3, UserCheck, MessageSquare, UserX,
   CalendarDays, Search, ChevronRight, X,
-  FileCheck, ScrollText, Upload, Heart,
+  FileCheck, ScrollText, Upload, Heart, DoorOpen,
 } from "lucide-react";
 
 type NavItem = {
@@ -70,6 +70,8 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Substituições", href: "/dashboard/substitutions", icon: UserX,      tint: "var(--tint-yellow)", minRole: Role.CLASS_DIRECTOR },
       { label: "Utilizadores",  href: "/dashboard/users",         icon: Users,      tint: "var(--tint-cyan)",   minRole: Role.SCHOOL_ADMIN },
+      { label: "Salas",         href: "/dashboard/rooms",             icon: DoorOpen,   tint: "var(--tint-indigo)", minRole: Role.SCHOOL_ADMIN },
+      { label: "Enc. Educação", href: "/dashboard/admin/guardians",   icon: Heart,      tint: "var(--tint-pink)",   minRole: Role.SCHOOL_ADMIN },
       { label: "Importar",      href: "/dashboard/admin/import",  icon: Upload,     tint: "var(--tint-teal)",   minRole: Role.SCHOOL_ADMIN },
       { label: "Auditoria",     href: "/dashboard/audit",         icon: ScrollText, tint: "var(--tint-purple)", minRole: Role.SCHOOL_ADMIN },
       { label: "Definições",    href: "/dashboard/settings",      icon: Settings,   tint: "var(--tint-gray)",   minRole: Role.SCHOOL_ADMIN },
@@ -161,7 +163,7 @@ export function Sidebar({ userRole, userName, userEmail, schoolName, unreadMessa
         </div>
 
         {/* Brand */}
-        <div className="flex items-center gap-2.5 px-4 pt-4 pb-3 lg:pt-2">
+        <div data-sidebar-brand className="flex items-center gap-2.5 px-4 pt-4 pb-3 lg:pt-2">
           <div
             className="h-7 w-7 rounded-[7px] flex items-center justify-center text-white shrink-0"
             style={{
@@ -177,7 +179,7 @@ export function Sidebar({ userRole, userName, userEmail, schoolName, unreadMessa
         </div>
 
         {/* Search */}
-        <div className="px-3 pb-2">
+        <div data-sidebar-search className="px-3 pb-2">
           <div className="flex items-center gap-1.5 rounded-[7px] bg-[var(--muted)] px-2 py-1.5">
             <Search className="h-3 w-3 text-[var(--muted-foreground)] shrink-0" />
             <input
@@ -193,7 +195,7 @@ export function Sidebar({ userRole, userName, userEmail, schoolName, unreadMessa
         <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-3">
           {filteredSections.map((sec) => (
             <div key={sec.label}>
-              <div className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--muted-foreground)]">
+              <div data-sidebar-section-label className="px-2 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--muted-foreground)]">
                 {sec.label}
               </div>
               <ul className="space-y-0.5">
@@ -254,13 +256,13 @@ export function Sidebar({ userRole, userName, userEmail, schoolName, unreadMessa
             >
               {initials || "U"}
             </div>
-            <div className="min-w-0 flex-1 leading-tight">
+            <div data-sidebar-user-info className="min-w-0 flex-1 leading-tight">
               <div className="text-[13px] font-medium truncate">{userName}</div>
               <div className="text-[11px] text-[var(--muted-foreground)] truncate">
                 {ROLE_LABELS[userRole]}
               </div>
             </div>
-            <ChevronRight className="h-3 w-3 text-[var(--muted-foreground)] shrink-0" />
+            <ChevronRight data-sidebar-chevron className="h-3 w-3 text-[var(--muted-foreground)] shrink-0" />
           </Link>
         </div>
       </aside>

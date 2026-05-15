@@ -10,6 +10,8 @@ interface Props {
   visibility: R2Visibility;
   classId?: string;
   subjectId?: string;
+  moduleId?: string;
+  folderId?: string;
   multiple?: boolean;
   accept?: string;
   label?: string;
@@ -22,6 +24,8 @@ export function R2UploadButton({
   visibility,
   classId,
   subjectId,
+  moduleId,
+  folderId,
   multiple = true,
   accept,
   label = "Carregar ficheiro",
@@ -34,6 +38,8 @@ export function R2UploadButton({
     visibility,
     classId,
     subjectId,
+    moduleId,
+    folderId,
     onError: (msg) => toast.error(msg),
   });
 

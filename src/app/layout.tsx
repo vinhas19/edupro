@@ -11,10 +11,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt" className="h-full" suppressHydrationWarning>
       <head>
-        {/* Theme bootstrap — applies stored preference before paint to avoid flash */}
+        {/* Theme + Tweaks bootstrap — applies stored prefs before paint to avoid flash */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('edupro:theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(!t&&d))document.documentElement.classList.add('dark');}catch(e){}})();`,
+            __html: `(function(){try{
+              var t=localStorage.getItem('edupro:theme');
+              var d=window.matchMedia('(prefers-color-scheme: dark)').matches;
+              if(t==='dark'||(!t&&d))document.documentElement.classList.add('dark');
+              var sb=localStorage.getItem('edupro:sidebar-style')||'floating';
+              document.documentElement.dataset.sidebarStyle=sb;
+              var cs=localStorage.getItem('edupro:card-style')||'elevated';
+              document.documentElement.dataset.cardStyle=cs;
+            }catch(e){}})();`,
           }}
         />
       </head>

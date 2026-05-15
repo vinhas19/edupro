@@ -7,6 +7,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { PanelCard } from "@/components/dashboard/panel-card";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { ProgressRing } from "@/components/dashboard/progress-ring";
+import { ActivityChart } from "@/components/dashboard/activity-chart";
 import {
   Users, GraduationCap, BookOpen, ClipboardList, AlertCircle, CheckCircle,
   Calendar, TrendingUp, MessageSquare, Bell, FileText, BarChart3,
@@ -20,6 +21,7 @@ export default async function DashboardPage() {
   if (!session?.user) redirect("/login");
 
   const { id: userId, role, schoolId, name } = session.user;
+  if (role === Role.GUARDIAN) redirect("/dashboard/guardian");
   const firstName = name.split(" ")[0];
   const today = format(new Date(), "EEEE, d 'de' MMMM", { locale: pt });
 
@@ -202,7 +204,19 @@ export default async function DashboardPage() {
     const presentCount = attendance.filter((r) => r.status === "PRESENT" || r.status === "LATE").length;
     const attendanceRate = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 100;
 
-    const maxLessons = Math.max(1, ...weekLessons.map((d) => d._count._all));
+    const chartData = Array.from({ length: 7 }).map((_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      date.setHours(0, 0, 0, 0);
+      const dayData = weekLessons.find(
+        (d) => new Date(d.date).toDateString() === date.toDateString()
+      );
+      return {
+        label: format(date, "EE", { locale: pt }).slice(0, 3),
+        value: dayData?._count._all ?? 0,
+        isToday: date.toDateString() === new Date().toDateString(),
+      };
+    });
 
     return (
       <div className="space-y-5 sm:space-y-6">
@@ -217,33 +231,8 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
           <PanelCard title="Atividade desta semana">
-            <div className="flex items-end gap-2 h-24 mb-3">
-              {Array.from({ length: 7 }).map((_, i) => {
-                const date = new Date();
-                date.setDate(date.getDate() - (6 - i));
-                date.setHours(0, 0, 0, 0);
-                const dayData = weekLessons.find(
-                  (d) => new Date(d.date).toDateString() === date.toDateString()
-                );
-                const count = dayData?._count._all ?? 0;
-                const h = (count / maxLessons) * 100;
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <div
-                      className="w-full rounded-t-[4px]"
-                      style={{
-                        height: `${Math.max(4, h)}%`,
-                        background: "linear-gradient(180deg, var(--tint-blue), #0058c9)",
-                      }}
-                    />
-                    <span className="text-[10px] text-[var(--muted-foreground)] tabular-nums">
-                      {format(date, "EE", { locale: pt }).charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-[var(--separator)]">
+            <ActivityChart data={chartData} height={160} />
+            <div className="grid grid-cols-3 gap-2 text-center pt-3 border-t border-[var(--separator)] mt-2">
               <div>
                 <div className="text-[18px] font-bold tabular-nums">{weekLessons.reduce((s, d) => s + d._count._all, 0)}</div>
                 <div className="text-[11px] text-[var(--muted-foreground)]">Aulas</div>

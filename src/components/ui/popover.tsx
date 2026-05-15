@@ -5,8 +5,15 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 
 import { cn } from "@/lib/utils"
 
-function Popover({ ...props }: PopoverPrimitive.Root.Props) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
+function Popover({ open, defaultOpen, ...props }: PopoverPrimitive.Root.Props) {
+  // Avoid switching between controlled/uncontrolled: only forward whichever was provided.
+  const controlProps =
+    open !== undefined
+      ? { open }
+      : defaultOpen !== undefined
+        ? { defaultOpen }
+        : {};
+  return <PopoverPrimitive.Root data-slot="popover" {...controlProps} {...props} />
 }
 
 function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {

@@ -12,8 +12,11 @@ const schema = z.object({
   content: z.string().optional(),
   topicId: z.string().optional(),
   subjectId: z.string().optional(),
+  moduleId: z.string().optional(),
   dueDate: z.string().optional(),
   maxGrade: z.number().optional(),
+  countsForModule: z.boolean().optional(),
+  allowLate: z.boolean().optional(),
   attachmentIds: z.array(z.string()).optional(),
 });
 
@@ -51,8 +54,11 @@ export async function POST(req: Request) {
       content: parsed.data.content,
       topicId: parsed.data.topicId,
       subjectId: parsed.data.subjectId,
+      moduleId: parsed.data.moduleId,
       dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null,
       maxGrade: parsed.data.maxGrade,
+      countsForModule: parsed.data.countsForModule ?? false,
+      allowLate: parsed.data.allowLate ?? true,
       authorId: session.user.id,
     },
   });

@@ -85,6 +85,7 @@ export default async function BoletimPage({
 
   // Aggregate per subject
   type SubjAgg = {
+    id: string;
     name: string;
     moduleCount: number;
     completed: number;
@@ -104,6 +105,7 @@ export default async function BoletimPage({
       }
     }
     return {
+      id: s.id,
       name: s.name,
       moduleCount: s.modules.length,
       completed,
@@ -213,7 +215,7 @@ export default async function BoletimPage({
           ) : (
             <ul className="divide-y divide-[var(--separator)]">
               {subjects.map((s) => (
-                <li key={s.name} className="px-4 py-3 grid grid-cols-[1fr_auto_auto] items-center gap-3">
+                <li key={s.id} className="px-4 py-3 grid grid-cols-[1fr_auto_auto] items-center gap-3">
                   <div>
                     <p className="text-[14px] font-medium">{s.name}</p>
                     <p className="text-[11px] text-[var(--muted-foreground)]">

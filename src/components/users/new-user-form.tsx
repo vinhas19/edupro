@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 const schema = z.object({
   name: z.string().min(2, "Nome obrigatório"),
   email: z.string().email("Email inválido"),
-  role: z.enum(["SCHOOL_ADMIN", "COURSE_DIRECTOR", "CLASS_DIRECTOR", "TEACHER", "STUDENT"]),
+  role: z.enum(["SCHOOL_ADMIN", "COURSE_DIRECTOR", "CLASS_DIRECTOR", "TEACHER", "STUDENT", "GUARDIAN"]),
   password: z.string().min(8, "Mínimo 8 caracteres"),
 });
 
@@ -24,6 +24,7 @@ type FormData = z.infer<typeof schema>;
 
 const ROLES = [
   { value: "STUDENT", label: "Aluno" },
+  { value: "GUARDIAN", label: "Encarregado de Educação" },
   { value: "TEACHER", label: "Professor" },
   { value: "CLASS_DIRECTOR", label: "Diretor de Turma" },
   { value: "COURSE_DIRECTOR", label: "Diretor de Curso" },

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Menu, Sun, Moon, LogOut, User, ChevronDown } from "lucide-react";
+import { Menu, LogOut, User, ChevronDown } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Role } from "@prisma/client";
 import { ROLE_LABELS } from "@/lib/permissions";
@@ -52,24 +51,6 @@ interface TopbarProps {
 export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isDark, setIsDark] = useState(false);
-
-  // Sync dark mode state with document
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
-  }, []);
-
-  function toggleDark() {
-    const next = !isDark;
-    setIsDark(next);
-    if (next) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("edupro:theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("edupro:theme", "light");
-    }
-  }
 
   function openSidebar() {
     window.dispatchEvent(new CustomEvent("edupro:open-sidebar"));
@@ -85,7 +66,7 @@ export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
     .toUpperCase();
 
   return (
-    <header className="h-[52px] flex items-center gap-2 px-3 sm:px-5 lg:px-7 border-b border-[var(--separator)] bg-[var(--card)] shrink-0">
+    <header data-slot="topbar" className="h-[52px] flex items-center gap-2 px-3 sm:px-5 lg:px-7 border-b border-[var(--separator)] bg-[var(--card)] shrink-0">
       {/* Mobile hamburger */}
       <button
         onClick={openSidebar}
@@ -95,23 +76,14 @@ export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
         <Menu className="h-4 w-4" />
       </button>
 
-      <h2 className="text-[15px] sm:text-[17px] font-semibold tracking-[-0.012em] truncate">
+      <h2 data-topbar-title className="text-[15px] sm:text-[17px] font-semibold tracking-[-0.012em] truncate">
         {title}
       </h2>
 
       <div className="flex-1" />
 
-      {/* Tweaks (accent + density) */}
+      {/* Tweaks: dark mode, accent, layout */}
       <TweaksPopover />
-
-      {/* Dark mode toggle */}
-      <button
-        onClick={toggleDark}
-        aria-label={isDark ? "Modo claro" : "Modo escuro"}
-        className="h-9 w-9 rounded-[6px] flex items-center justify-center hover:bg-[var(--muted)] transition-colors"
-      >
-        {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-      </button>
 
       {/* User menu (desktop shows full, mobile shows just avatar) */}
       <DropdownMenu>
@@ -131,15 +103,13 @@ export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
           <ChevronDown className="hidden md:block h-3 w-3 text-[var(--muted-foreground)]" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>
-            <div className="leading-tight">
-              <p className="text-[13px] font-medium">{userName}</p>
-              <p className="text-[11px] text-[var(--muted-foreground)]">{userEmail}</p>
-              <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--muted)]">
-                {ROLE_LABELS[userRole]}
-              </span>
-            </div>
-          </DropdownMenuLabel>
+          <div className="px-1.5 py-1.5 leading-tight">
+            <p className="text-[13px] font-medium">{userName}</p>
+            <p className="text-[11px] text-[var(--muted-foreground)] truncate">{userEmail}</p>
+            <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--muted)]">
+              {ROLE_LABELS[userRole]}
+            </span>
+          </div>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
             <User className="mr-2 h-4 w-4" />O Meu Perfil

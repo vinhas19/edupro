@@ -20,10 +20,12 @@ interface UploadOptions {
   visibility: R2Visibility;
   classId?: string;
   subjectId?: string;
+  moduleId?: string;
+  folderId?: string;
   onError?: (msg: string) => void;
 }
 
-export function useR2Upload({ visibility, classId, subjectId, onError }: UploadOptions) {
+export function useR2Upload({ visibility, classId, subjectId, moduleId, folderId, onError }: UploadOptions) {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -77,6 +79,8 @@ export function useR2Upload({ visibility, classId, subjectId, onError }: UploadO
           visibility,
           classId,
           subjectId,
+          moduleId,
+          folderId,
         }),
       });
       if (!completeRes.ok) {
