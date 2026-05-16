@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { R2UploadButton } from "@/components/files/r2-upload-button";
-import { Loader2, CheckCircle2, AlertTriangle, FileText } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, FileText, Eye, Download } from "lucide-react";
 import { toast } from "sonner";
+import { downloadFile } from "@/lib/download-file";
 
 interface Existing {
   id: string;
@@ -97,10 +98,25 @@ export function StudentSubmitPanel({ postId, isOverdue, allowLate, existing }: P
             <ul className="space-y-1">
               {existing.files.map((f) => (
                 <li key={f.id} className="flex items-center gap-2 text-[13px]">
-                  <FileText className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
-                  <a href={f.url} target="_blank" rel="noreferrer" className="text-[var(--primary)] hover:underline truncate">
-                    {f.name}
+                  <FileText className="h-3.5 w-3.5 text-[var(--muted-foreground)] shrink-0" />
+                  <span className="truncate flex-1">{f.name}</span>
+                  <a
+                    href={f.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Visualizar"
+                    className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-[var(--muted)]"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
                   </a>
+                  <button
+                    type="button"
+                    title="Transferir"
+                    onClick={() => downloadFile(f.url, f.name)}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded hover:bg-[var(--muted)]"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
                 </li>
               ))}
             </ul>
@@ -133,6 +149,7 @@ export function StudentSubmitPanel({ postId, isOverdue, allowLate, existing }: P
                 size="sm"
                 variant="outline"
                 label="Adicionar ficheiro"
+                autoRefresh={false}
                 onUploaded={(files) => setPendingFileIds((prev) => [...prev, ...files.map((f) => f.id)])}
               />
               {pendingFileIds.length > 0 && (

@@ -86,7 +86,11 @@ export function NewClassForm({ courses, years, directors, defaultCourseId }: Pro
 
           <div className="space-y-2">
             <Label>Curso</Label>
-            <Select defaultValue={defaultCourseId} onValueChange={(v: string | null) => setValue("courseId", v ?? "")}>
+            <Select
+              defaultValue={defaultCourseId}
+              items={Object.fromEntries(courses.map((c) => [c.id, `${c.name} (${c.code})`]))}
+              onValueChange={(v: string | null) => setValue("courseId", v ?? "")}
+            >
               <SelectTrigger><SelectValue placeholder="Selecionar curso..." /></SelectTrigger>
               <SelectContent>
                 {courses.map((c) => (
@@ -100,7 +104,11 @@ export function NewClassForm({ courses, years, directors, defaultCourseId }: Pro
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Ano Letivo</Label>
-              <Select defaultValue={activeYearId} onValueChange={(v: string | null) => setValue("academicYearId", v ?? "")}>
+              <Select
+                defaultValue={activeYearId}
+                items={Object.fromEntries(years.map((y) => [y.id, y.label]))}
+                onValueChange={(v: string | null) => setValue("academicYearId", v ?? "")}
+              >
                 <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                 <SelectContent>
                   {years.map((y) => (
@@ -117,7 +125,10 @@ export function NewClassForm({ courses, years, directors, defaultCourseId }: Pro
 
           <div className="space-y-2">
             <Label>Diretor de Turma (opcional)</Label>
-            <Select onValueChange={(v: string | null) => setValue("classDirectorId", v ?? "")}>
+            <Select
+              items={Object.fromEntries(directors.map((d) => [d.id, d.name]))}
+              onValueChange={(v: string | null) => setValue("classDirectorId", v ?? "")}
+            >
               <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
               <SelectContent>
                 {directors.map((d) => (

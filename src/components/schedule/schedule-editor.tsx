@@ -182,7 +182,11 @@ export function ScheduleEditor({ classId, blocks, subjects, rooms }: Props) {
 
               <div className="space-y-2">
                 <Label>Disciplina</Label>
-                <Select value={subjectId} onValueChange={(v: string | null) => { setSubjectId(v ?? ""); setTeacherId(""); }}>
+                <Select
+                  value={subjectId}
+                  items={Object.fromEntries(subjects.map((s) => [s.id, s.name]))}
+                  onValueChange={(v: string | null) => { setSubjectId(v ?? ""); setTeacherId(""); }}
+                >
                   <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
                   <SelectContent>
                     {subjects.map((s) => (
@@ -195,7 +199,11 @@ export function ScheduleEditor({ classId, blocks, subjects, rooms }: Props) {
               {subjectId && (
                 <div className="space-y-2">
                   <Label>Professor</Label>
-                  <Select value={teacherId} onValueChange={(v: string | null) => setTeacherId(v ?? "")}>
+                  <Select
+                    value={teacherId}
+                    items={Object.fromEntries(teachersForSelected.map((t) => [t.id, t.name]))}
+                    onValueChange={(v: string | null) => setTeacherId(v ?? "")}
+                  >
                     <SelectTrigger><SelectValue placeholder="Sem professor" /></SelectTrigger>
                     <SelectContent>
                       {teachersForSelected.length === 0 ? (
@@ -210,7 +218,11 @@ export function ScheduleEditor({ classId, blocks, subjects, rooms }: Props) {
 
               <div className="space-y-2">
                 <Label>Sala (opcional)</Label>
-                <Select value={roomId} onValueChange={(v: string | null) => setRoomId(v ?? "")}>
+                <Select
+                  value={roomId}
+                  items={Object.fromEntries(rooms.map((r) => [r.id, r.name]))}
+                  onValueChange={(v: string | null) => setRoomId(v ?? "")}
+                >
                   <SelectTrigger><SelectValue placeholder="Sem sala" /></SelectTrigger>
                   <SelectContent>
                     {rooms.map((r) => (

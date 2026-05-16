@@ -65,7 +65,11 @@ export function AbsenceForm({ teachers }: Props) {
       <CardContent className="pt-6 space-y-4">
         <div className="space-y-2">
           <Label>Professor ausente</Label>
-          <Select value={teacherId} onValueChange={(v: string | null) => setTeacherId(v ?? "")}>
+          <Select
+            value={teacherId}
+            items={Object.fromEntries(teachers.map((t) => [t.id, t.name]))}
+            onValueChange={(v: string | null) => setTeacherId(v ?? "")}
+          >
             <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
             <SelectContent>
               {teachers.map((t) => (

@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { StudentSubmitPanel } from "@/components/documents/student-submit-panel";
 import { TeacherGradingPanel } from "@/components/documents/teacher-grading-panel";
+import { AttachmentChip } from "@/components/files/attachment-chip";
 
 export default async function TaskDetailPage({
   params,
@@ -134,20 +135,11 @@ export default async function TaskDetailPage({
               <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[var(--muted-foreground)] mb-1.5">
                 Anexos do professor
               </p>
-              <ul className="space-y-1">
+              <div className="flex flex-wrap gap-1.5">
                 {post.attachments.map((a) => (
-                  <li key={a.id}>
-                    <a
-                      href={a.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[13px] text-[var(--primary)] hover:underline"
-                    >
-                      {a.name}
-                    </a>
-                  </li>
+                  <AttachmentChip key={a.id} name={a.name} url={a.url} />
                 ))}
-              </ul>
+              </div>
             </div>
           )}
         </CardContent>

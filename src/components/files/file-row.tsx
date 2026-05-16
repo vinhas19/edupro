@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Download, Trash2, FileText, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
+import { Download, Trash2, FileText, Image as ImageIcon, FileSpreadsheet, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
+import { downloadFile } from "@/lib/download-file";
 
 interface Props {
   id: string;
@@ -34,6 +35,7 @@ function iconFor(mime: string) {
 export function FileRow({ id, name, url, size, mimeType, createdAt, ownerName, canDelete }: Props) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const Icon = iconFor(mimeType);
 
   async function remove() {
@@ -52,6 +54,15 @@ export function FileRow({ id, name, url, size, mimeType, createdAt, ownerName, c
     }
   }
 
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      await downloadFile(url, name);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="flex items-center gap-3 rounded-lg border px-3 py-2 hover:bg-gray-50">
       <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -62,13 +73,23 @@ export function FileRow({ id, name, url, size, mimeType, createdAt, ownerName, c
           {ownerName && ` · ${ownerName}`}
         </p>
       </div>
-      <a href={url} target="_blank" rel="noreferrer">
-        <Button size="icon" variant="ghost" className="h-8 w-8">
-          <Download className="h-3.5 w-3.5" />
+      <a href={url} target="_blank" rel="noreferrer" title="Visualizar">
+        <Button size="icon" variant="ghost" className="h-8 w-8" type="button">
+          <Eye className="h-3.5 w-3.5" />
         </Button>
       </a>
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-8 w-8"
+        title="Transferir"
+        onClick={handleDownload}
+        disabled={downloading}
+      >
+        <Download className="h-3.5 w-3.5" />
+      </Button>
       {canDelete && (
-        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={remove} disabled={deleting}>
+        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={remove} disabled={deleting} title="Apagar">
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       )}

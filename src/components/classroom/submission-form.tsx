@@ -7,9 +7,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { R2UploadButton } from "@/components/files/r2-upload-button";
 import { toast } from "sonner";
-import { Loader2, Paperclip, X, CheckCircle, Clock } from "lucide-react";
+import { Loader2, Paperclip, X, CheckCircle, Clock, Eye, Download } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
+import { downloadFile } from "@/lib/download-file";
 
 interface ExistingFile {
   id: string;
@@ -96,23 +97,39 @@ export function SubmissionForm({ postId, dueDate, status, submittedAt, grade, fe
           size="sm"
           variant="outline"
           label="Anexar ficheiro"
+          autoRefresh={false}
           onUploaded={(items) => setAttachments((a) => [...a, ...items])}
         />
         {attachments.map((a) => (
-          <a key={a.id} href={a.url} target="_blank" rel="noreferrer">
-            <Badge variant="secondary" className="gap-1">
-              <Paperclip className="h-3 w-3" />
-              <span className="max-w-[160px] truncate">{a.name}</span>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  setAttachments((items) => items.filter((x) => x.id !== a.id));
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          </a>
+          <Badge key={a.id} variant="secondary" className="gap-1.5 pl-2 pr-1 py-1">
+            <Paperclip className="h-3 w-3 shrink-0" />
+            <span className="max-w-[160px] truncate">{a.name}</span>
+            <a
+              href={a.url}
+              target="_blank"
+              rel="noreferrer"
+              title="Visualizar"
+              className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-muted-foreground/10"
+            >
+              <Eye className="h-3 w-3" />
+            </a>
+            <button
+              type="button"
+              title="Transferir"
+              onClick={() => downloadFile(a.url, a.name)}
+              className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-muted-foreground/10"
+            >
+              <Download className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              title="Remover"
+              onClick={() => setAttachments((items) => items.filter((x) => x.id !== a.id))}
+              className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-red-100 text-red-600"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
         ))}
       </div>
 

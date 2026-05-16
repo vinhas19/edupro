@@ -19,6 +19,16 @@ const STATUS_ICONS = {
   LATE: <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />,
 } as const;
 
+function StatPill({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="inline-flex items-center justify-center mb-1">{icon}</div>
+      <p className="text-lg font-bold tabular-nums leading-none">{value}</p>
+      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{label}</p>
+    </div>
+  );
+}
+
 export default async function AttendancePage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -62,103 +72,127 @@ export default async function AttendancePage() {
     });
 
     const totalAbsences = records.filter((r) => r.status === "ABSENT").length;
+    const totalJustified = records.filter((r) => r.status === "JUSTIFIED").length;
+    const totalLate = records.filter((r) => r.status === "LATE").length;
     const totalPresent = records.filter((r) => r.status === "PRESENT").length;
     const totalLessons = records.length;
+    const attendancePct = totalLessons > 0 ? Math.round((totalPresent / totalLessons) * 100) : 100;
 
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">A Minha Assiduidade</h1>
-
-        <div className="grid grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="flex items-center gap-3 pt-6">
-              <CheckCircle className="h-6 w-6 text-green-500" />
-              <div><p className="text-xl font-bold">{totalPresent}</p><p className="text-xs text-muted-foreground">Presenças</p></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 pt-6">
-              <XCircle className="h-6 w-6 text-red-500" />
-              <div><p className="text-xl font-bold">{totalAbsences}</p><p className="text-xs text-muted-foreground">Faltas</p></div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-3 pt-6">
-              <Clock className="h-6 w-6 text-blue-500" />
-              <div>
-                <p className="text-xl font-bold">
-                  {totalLessons > 0 ? Math.round((totalPresent / totalLessons) * 100) : 100}%
-                </p>
-                <p className="text-xs text-muted-foreground">Assiduidade</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div>
+          <h1 className="text-2xl font-bold">A minha assiduidade</h1>
+          <p className="text-muted-foreground text-sm">
+            {enrollment.class.name} · {enrollment.class.course.name}
+          </p>
         </div>
 
-        {Array.from(subjectRecords.values()).map((data) => {
-          if (!data.records.length) return null;
-          const absences = data.records.filter((r) => r.status === "ABSENT").length;
-          const present = data.records.filter((r) => r.status === "PRESENT").length;
-          const total = data.records.length;
-          const limit = calcAbsenceLimit(data.hours, 0.1);
-          const risk = getAbsenceRisk(absences, data.hours, 0.1);
+        {/* Resumo geral — barra de progresso e contadores */}
+        <Card>
+          <CardContent className="pt-5 space-y-4">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Taxa de presenças</p>
+                <p className={`text-4xl font-bold tabular-nums ${attendancePct >= 90 ? "text-green-600" : attendancePct >= 75 ? "text-orange-600" : "text-red-600"}`}>
+                  {attendancePct}%
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {totalPresent}/{totalLessons} aulas
+              </p>
+            </div>
+            <Progress value={attendancePct} className="h-2" />
+            <div className="grid grid-cols-4 gap-3 pt-2 border-t">
+              <StatPill icon={<CheckCircle className="h-4 w-4 text-green-600" />} value={totalPresent} label="Presentes" />
+              <StatPill icon={<XCircle className="h-4 w-4 text-red-600" />} value={totalAbsences} label="Faltas" />
+              <StatPill icon={<Clock className="h-4 w-4 text-yellow-600" />} value={totalJustified} label="Justificadas" />
+              <StatPill icon={<AlertTriangle className="h-4 w-4 text-orange-600" />} value={totalLate} label="Atrasos" />
+            </div>
+          </CardContent>
+        </Card>
 
-          return (
-            <Card key={data.name}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{data.name}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    {risk === "exceeded" && (
-                      <Badge variant="destructive" className="text-xs">Limite excedido</Badge>
-                    )}
-                    {risk === "warning" && (
-                      <Badge className="bg-orange-100 text-orange-700 text-xs">Em risco</Badge>
-                    )}
-                    <span className="text-sm text-muted-foreground">{absences}/{limit} faltas</span>
-                  </div>
-                </div>
-                <Progress
-                  value={total > 0 ? (present / total) * 100 : 100}
-                  className="h-1.5 mt-2"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  {data.records.slice(0, 8).map((r) => (
-                    <div key={r.id} className="flex items-center gap-3 text-sm py-1 border-b last:border-0">
-                      {STATUS_ICONS[r.status as AttendanceStatus]}
-                      <span className="text-muted-foreground text-xs">
-                        {format(new Date(r.lesson.date), "dd/MM/yyyy", { locale: pt })}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{r.lesson.startTime}</span>
-                      <Badge variant="outline" className="text-xs ml-auto">
-                        {ATTENDANCE_LABELS[r.status as AttendanceStatus]}
-                      </Badge>
-                      {r.justification && (
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs ${
-                            r.justification.status === "APPROVED"
-                              ? "bg-green-100 text-green-700"
-                              : r.justification.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {r.justification.status === "APPROVED" ? "Justificada" : r.justification.status === "PENDING" ? "Pendente" : "Rejeitada"}
-                        </Badge>
-                      )}
+        {/* Por disciplina */}
+        <div>
+          <h2 className="text-base font-semibold mb-3">Por disciplina</h2>
+          <div className="space-y-2">
+            {Array.from(subjectRecords.values()).map((data) => {
+              if (!data.records.length) return null;
+              const absences = data.records.filter((r) => r.status === "ABSENT").length;
+              const justified = data.records.filter((r) => r.status === "JUSTIFIED").length;
+              const present = data.records.filter((r) => r.status === "PRESENT").length;
+              const total = data.records.length;
+              const pct = total > 0 ? Math.round((present / total) * 100) : 100;
+              const limit = calcAbsenceLimit(data.hours, 0.1);
+              const risk = getAbsenceRisk(absences, data.hours, 0.1);
+
+              return (
+                <Card key={data.name}>
+                  <CardContent className="pt-4 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">{data.name}</p>
+                        <p className="text-[11px] text-muted-foreground">{data.hours}h totais</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {risk === "exceeded" && (
+                          <Badge variant="destructive" className="text-xs">Limite excedido</Badge>
+                        )}
+                        {risk === "warning" && (
+                          <Badge className="bg-orange-100 text-orange-700 text-xs">Em risco</Badge>
+                        )}
+                        <span className="text-sm font-bold tabular-nums">{pct}%</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                    <div className="flex items-center gap-2">
+                      <Progress value={pct} className="h-1.5 flex-1" />
+                      <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
+                        {absences}/{limit} faltas
+                      </span>
+                    </div>
+                    {(absences > 0 || justified > 0) && (
+                      <details className="text-sm">
+                        <summary className="cursor-pointer text-[12px] text-muted-foreground hover:text-foreground">
+                          Ver histórico ({data.records.length})
+                        </summary>
+                        <div className="mt-2 space-y-0.5 max-h-48 overflow-y-auto">
+                          {data.records.map((r) => (
+                            <div key={r.id} className="flex items-center gap-2 text-xs py-1 border-b last:border-0">
+                              {STATUS_ICONS[r.status as AttendanceStatus]}
+                              <span className="text-muted-foreground tabular-nums w-20">
+                                {format(new Date(r.lesson.date), "dd MMM", { locale: pt })}
+                              </span>
+                              <span className="text-muted-foreground tabular-nums">{r.lesson.startTime}</span>
+                              <Badge variant="outline" className="text-[10px] ml-auto">
+                                {ATTENDANCE_LABELS[r.status as AttendanceStatus]}
+                              </Badge>
+                              {r.justification && (
+                                <Badge
+                                  className={`text-[10px] ${
+                                    r.justification.status === "APPROVED" ? "bg-green-100 text-green-700"
+                                    : r.justification.status === "PENDING" ? "bg-yellow-100 text-yellow-700"
+                                    : "bg-red-100 text-red-700"
+                                  }`}
+                                >
+                                  {r.justification.status === "APPROVED" ? "Justificada" : r.justification.status === "PENDING" ? "Pendente" : "Rejeitada"}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   }
+
+  // ─── Helper component for stats ──────────────────────────────────────────
+  // (definido fora mas declarado aqui só para o student view inline)
 
   // ─── Teacher View — select lesson to register attendance ─────────────────
   const todayLessons = await prisma.lesson.findMany({
@@ -261,6 +295,7 @@ export default async function AttendancePage() {
         )}
       </div>
 
+      {/* fim do teacher view */}
       {/* Pending justifications */}
       {pendingJustifications.length > 0 && (
         <div className="space-y-4">

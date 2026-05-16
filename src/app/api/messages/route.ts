@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { canSendMessage } from "@/lib/messaging-permissions";
 
 const schema = z.object({
   recipientId: z.string(),
@@ -24,9 +25,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Cannot message yourself" }, { status: 400 });
   }
 
-  const recipient = await prisma.user.findUnique({ where: { id: parsed.data.recipientId } });
-  if (!recipient || recipient.schoolId !== session.user.schoolId) {
-    return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
+  const allowed = await canSendMessage(
+    session.user.id,
+    session.user.role,
+    parsed.data.recipientId,
+    session.user.schoolId,
+  );
+  if (!allowed) {
+    return NextResponse.json({ error: "Não tens permissão para contactar este utilizador." }, { status: 403 });
   }
 
   const [user1Id, user2Id] = orderPair(session.user.id, parsed.data.recipientId);

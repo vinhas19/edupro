@@ -27,8 +27,13 @@ export function ClassFilter({ classes, defaultValue }: Props) {
     router.push(qs ? `/dashboard/schedule?${qs}` : `/dashboard/schedule`);
   }
 
+  const items: Record<string, string> = {
+    ALL: "Todas as turmas",
+    ...Object.fromEntries(classes.map((c) => [c.id, `${c.name} (${c.course.code})`])),
+  };
+
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} items={items} onValueChange={onChange}>
       <SelectTrigger className="h-8 w-[200px] text-[12px]">
         <SelectValue placeholder="Todas as turmas" />
       </SelectTrigger>

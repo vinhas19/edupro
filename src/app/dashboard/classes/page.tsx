@@ -26,8 +26,12 @@ export default async function ClassesPage() {
         }
       : role === Role.CLASS_DIRECTOR
       ? {
+          // DT é também professor → vê turma que dirige + turmas onde leciona
           academicYear: { schoolId, active: true },
-          classDirectorId: userId,
+          OR: [
+            { classDirectorId: userId },
+            { subjectAssignments: { some: { teacherId: userId } } },
+          ],
         }
       : { academicYear: { schoolId, active: true } };
 

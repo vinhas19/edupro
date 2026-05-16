@@ -121,7 +121,11 @@ export function PhaseRow({ id, phase, dueDate, submittedAt, status, progress = 0
       <p className="text-[13px] font-semibold">{PHASE_LABELS[phase] ?? phase}</p>
       <div className="grid grid-cols-2 gap-2">
         <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-        <Select value={st} onValueChange={(v: string | null) => setSt(v ?? status)}>
+        <Select
+          value={st}
+          items={STATUS_LABELS}
+          onValueChange={(v: string | null) => setSt(v ?? status)}
+        >
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="PENDING">Pendente</SelectItem>

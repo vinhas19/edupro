@@ -71,7 +71,11 @@ export function NewNotificationForm({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Tipo de aviso</Label>
-              <Select value={type} onValueChange={(v) => v && setType(v)}>
+              <Select
+                value={type}
+                items={{ INFO: "Informação", WARNING: "Aviso", ALERT: "Alerta", DEADLINE: "Prazo" }}
+                onValueChange={(v) => v && setType(v)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -86,7 +90,17 @@ export function NewNotificationForm({
 
             <div className="space-y-1.5">
               <Label>Destinatários</Label>
-              <Select value={recipientType} onValueChange={(v) => v && setRecipientType(v)}>
+              <Select
+                value={recipientType}
+                items={{
+                  ALL_SCHOOL: "Toda a escola",
+                  ALL_STUDENTS: "Todos os alunos",
+                  ALL_TEACHERS: "Todos os professores",
+                  CLASS_STUDENTS: "Alunos de uma turma",
+                  CLASS_TEACHERS: "Professores de uma turma",
+                }}
+                onValueChange={(v) => v && setRecipientType(v)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -104,7 +118,11 @@ export function NewNotificationForm({
           {(recipientType === "CLASS_STUDENTS" || recipientType === "CLASS_TEACHERS") && (
             <div className="space-y-1.5">
               <Label>Turma</Label>
-              <Select value={classId} onValueChange={(v) => setClassId(v ?? "")}>
+              <Select
+                value={classId}
+                items={Object.fromEntries(classes.map((c) => [c.id, `${c.name} — ${c.course.name}`]))}
+                onValueChange={(v) => setClassId(v ?? "")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar turma..." />
                 </SelectTrigger>

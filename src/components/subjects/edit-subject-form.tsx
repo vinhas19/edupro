@@ -138,7 +138,17 @@ export function EditSubjectForm({ subject }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label>Componente de Formação</Label>
-            <Select value={component} onValueChange={(v: string | null) => setComponent(v ?? "TECHNICAL")}>
+            <Select
+              value={component}
+              items={{
+                SOCIOCULTURAL: "Sociocultural",
+                SCIENTIFIC: "Científica",
+                TECHNICAL: "Técnica/Tecnológica",
+                FCT: "FCT",
+                PAP: "PAP",
+              }}
+              onValueChange={(v: string | null) => setComponent(v ?? "TECHNICAL")}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="SOCIOCULTURAL">Sociocultural</SelectItem>

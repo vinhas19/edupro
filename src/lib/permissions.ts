@@ -40,6 +40,16 @@ export function canManageCourses(role: Role): boolean {
   return hasRole(role, Role.COURSE_DIRECTOR);
 }
 
+/**
+ * Roles que efetivamente lecionam (recebem atribuições de disciplinas/turmas).
+ * Diretores de turma também são professores na prática; diretores de curso só
+ * são considerados aqui se também tiverem aulas atribuídas (verifica-se em
+ * `subjectAssignments`).
+ */
+export function isTeachingRole(role: Role): boolean {
+  return role === Role.TEACHER || role === Role.CLASS_DIRECTOR || role === Role.COURSE_DIRECTOR;
+}
+
 // Module status display
 export const MODULE_STATUS_LABELS = {
   NOT_STARTED: "Não Iniciado",

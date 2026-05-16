@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Users, BookOpen, Megaphone, ClipboardList, HelpCircle,
-  Paperclip, Calendar, FileText, GraduationCap, Pencil,
+  Calendar, FileText, GraduationCap, Pencil,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -18,6 +18,7 @@ import { NewPostForm } from "@/components/classroom/new-post-form";
 import { NewTopicForm } from "@/components/classroom/new-topic-form";
 import { PostComments } from "@/components/classroom/post-comments";
 import { SubmissionForm } from "@/components/classroom/submission-form";
+import { AttachmentChip } from "@/components/files/attachment-chip";
 
 const POST_TYPE_META = {
   ANNOUNCEMENT: { label: "Anúncio", icon: Megaphone, color: "bg-blue-100 text-blue-700" },
@@ -200,12 +201,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
                     {post.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {post.attachments.map((f) => (
-                          <a key={f.id} href={f.url} target="_blank" rel="noreferrer">
-                            <Badge variant="outline" className="gap-1 hover:bg-muted">
-                              <Paperclip className="h-3 w-3" />
-                              <span className="max-w-[200px] truncate">{f.name}</span>
-                            </Badge>
-                          </a>
+                          <AttachmentChip key={f.id} name={f.name} url={f.url} />
                         ))}
                       </div>
                     )}

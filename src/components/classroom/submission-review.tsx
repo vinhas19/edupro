@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
+import { AttachmentChip } from "@/components/files/attachment-chip";
 
 interface Submission {
   id: string;
@@ -87,12 +88,7 @@ export function SubmissionReview({ submission, maxGrade }: { submission: Submiss
         {submission.files.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {submission.files.map((f) => (
-              <a key={f.id} href={f.url} target="_blank" rel="noreferrer">
-                <Badge variant="outline" className="gap-1 hover:bg-muted">
-                  <Paperclip className="h-3 w-3" />
-                  <span className="max-w-[200px] truncate">{f.name}</span>
-                </Badge>
-              </a>
+              <AttachmentChip key={f.id} name={f.name} url={f.url} />
             ))}
           </div>
         )}

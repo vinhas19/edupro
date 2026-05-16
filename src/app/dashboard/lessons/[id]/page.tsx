@@ -10,6 +10,7 @@ import { ArrowLeft, Calendar, Clock, Users, ClipboardList, CheckCircle, XCircle,
 import Link from "next/link";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
+import { SummaryEditor } from "@/components/lessons/summary-editor";
 
 const STATUS_ICONS = {
   PRESENT: <CheckCircle className="h-3.5 w-3.5 text-green-500" />,
@@ -101,11 +102,12 @@ export default async function LessonDetailPage({ params }: { params: Promise<{ i
           <CardTitle className="text-base">Sumário</CardTitle>
         </CardHeader>
         <CardContent>
-          {lesson.summary ? (
-            <p className="text-sm whitespace-pre-wrap">{lesson.summary}</p>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">Sem sumário registado.</p>
-          )}
+          <SummaryEditor
+            lessonId={lesson.id}
+            initialSummary={lesson.summary}
+            initialLessonNumber={lesson.lessonNumber}
+            canEdit={isOwner || hasRole(session.user.role, Role.CLASS_DIRECTOR)}
+          />
         </CardContent>
       </Card>
 

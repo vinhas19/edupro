@@ -65,7 +65,11 @@ export function FctProgressForm({ id, completedHours, requiredHours, status, gra
           </div>
           <div>
             <Label>Estado</Label>
-            <Select value={st} onValueChange={(v: string | null) => setSt(v ?? status)}>
+            <Select
+              value={st}
+              items={{ PLANNED: "Planeado", ONGOING: "Em Curso", COMPLETED: "Concluído", CANCELLED: "Cancelado" }}
+              onValueChange={(v: string | null) => setSt(v ?? status)}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="PLANNED">Planeado</SelectItem>

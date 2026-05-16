@@ -52,7 +52,18 @@ export function PapStatusForm({ id, status, finalGrade }: Props) {
       <CardContent className="space-y-3">
         <div>
           <Label>Estado</Label>
-          <Select value={st} onValueChange={(v: string | null) => setSt(v ?? status)}>
+          <Select
+            value={st}
+            items={{
+              PROPOSAL: "Proposta",
+              DEVELOPMENT: "Desenvolvimento",
+              SUBMITTED: "Entregue",
+              PRESENTATION: "Apresentação",
+              COMPLETED: "Concluído",
+              FAILED: "Reprovado",
+            }}
+            onValueChange={(v: string | null) => setSt(v ?? status)}
+          >
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="PROPOSAL">Proposta</SelectItem>

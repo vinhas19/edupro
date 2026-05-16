@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { addDays, format, isToday } from "date-fns";
+import { pt } from "date-fns/locale";
 
 const DAYS = [
   { value: 1, short: "Seg", long: "Segunda" },
@@ -35,6 +37,8 @@ interface Props {
   dayStart?: string;
   dayEnd?: string;
   timeSlots?: { startTime: string; endTime: string; label?: string | null }[];
+  /** Data da segunda-feira da semana mostrada. Default: semana atual. */
+  weekStart?: Date;
 }
 
 function timeToMin(t: string) {
@@ -48,7 +52,7 @@ function minToHHMM(m: number) {
 }
 
 const PX_PER_MIN = 1.4;        // 50 min ≈ 70 px (legível)
-const HEADER_PX = 40;
+const HEADER_PX = 52;          // espaço para "Seg" + data
 const LABEL_COL_PX = 72;
 
 export function ScheduleGrid({
@@ -57,9 +61,45 @@ export function ScheduleGrid({
   dayStart = "08:00",
   dayEnd = "18:30",
   timeSlots,
+  weekStart,
 }: Props) {
-  const startMin = timeToMin(dayStart);
-  const endMin = Math.max(timeToMin(dayEnd), startMin + 60);
+  // Data por cada dia da semana mostrada
+  const weekDates = DAYS.map((d, i) =>
+    weekStart ? addDays(weekStart, i) : null,
+  );
+  // Grid cobre toda a janela onde podem haver aulas:
+  //   início = mais cedo entre dayStart, 1º bloco e 1º timeSlot (floor à hora cheia)
+  //   fim    = mais tarde entre dayEnd, último bloco e último timeSlot (usado tal qual)
+  // Não arredondamos o fim para cima — usamos o valor exacto para que o grid termine
+  // onde a escola realmente termina (ex.: dayEnd=18:30 → grid acaba a 18:30, não 19:00).
+  const earliestBlockStart = blocks.reduce(
+    (min, b) => Math.min(min, timeToMin(b.startTime)),
+    Infinity,
+  );
+  const earliestSlotStart = (timeSlots ?? []).reduce(
+    (min, s) => Math.min(min, timeToMin(s.startTime)),
+    Infinity,
+  );
+  const latestBlockEnd = blocks.reduce(
+    (max, b) => Math.max(max, timeToMin(b.endTime)),
+    0,
+  );
+  const latestSlotEnd = (timeSlots ?? []).reduce(
+    (max, s) => Math.max(max, timeToMin(s.endTime)),
+    0,
+  );
+  const rawStart = Math.min(
+    timeToMin(dayStart),
+    earliestBlockStart,
+    earliestSlotStart,
+  );
+  const rawEnd = Math.max(
+    timeToMin(dayEnd),
+    latestBlockEnd,
+    latestSlotEnd,
+  );
+  const startMin = Math.floor(rawStart / 60) * 60;
+  const endMin = Math.max(rawEnd, startMin + 60);
   const totalMins = endMin - startMin;
   const totalPx = totalMins * PX_PER_MIN;
 
@@ -79,8 +119,10 @@ export function ScheduleGrid({
   }
 
   // Labels in left column:
-  //  - if schools defined slots → mostra a hora de início de cada bloco + última hora de fim
-  //  - senão → fallback para horas certas
+  //  - se a escola definiu timeSlots → mostra início de cada slot + fim do último slot
+  //  - acrescenta marcas de hora cheia para o intervalo antes do 1º slot e depois do último
+  //    (para que a área "fora dos slots" mas dentro do horário escolar tenha referências)
+  //  - sem timeSlots → fallback puro a horas cheias
   const slotLabelMinutes: { min: number; label: string }[] = (() => {
     const slots = (timeSlots ?? [])
       .map((s) => ({
@@ -97,15 +139,30 @@ export function ScheduleGrid({
     }
 
     const arr: { min: number; label: string }[] = [];
-    let lastEnd = -Infinity;
-    for (const s of slots) {
-      arr.push({ min: s.start, label: s.startStr });
-      lastEnd = Math.max(lastEnd, s.end);
+    const seen = new Set<number>();
+    const push = (m: number, label: string) => {
+      if (m < startMin || m > endMin) return;
+      if (seen.has(m)) return;
+      seen.add(m);
+      arr.push({ min: m, label });
+    };
+
+    const firstSlotStart = slots[0].start;
+    const lastSlotEnd = slots[slots.length - 1].end;
+
+    // Marcas de hora cheia antes do 1º slot (ex.: dayStart=07:00, 1º slot=08:00 → marca 07:00)
+    for (let m = startMin; m < firstSlotStart; m += 60) {
+      push(m, minToHHMM(m));
     }
-    if (lastEnd > -Infinity) {
-      arr.push({ min: lastEnd, label: minToHHMM(lastEnd) });
+    // Cada início de slot + fim do último slot
+    for (const s of slots) push(s.start, s.startStr);
+    push(lastSlotEnd, minToHHMM(lastSlotEnd));
+    // Marcas de hora cheia depois do último slot até ao fim do grid
+    const firstHourAfter = Math.ceil((lastSlotEnd + 1) / 60) * 60;
+    for (let m = firstHourAfter; m <= endMin; m += 60) {
+      push(m, minToHHMM(m));
     }
-    return arr;
+    return arr.sort((a, b) => a.min - b.min);
   })();
 
   // Stable color per subject
@@ -113,7 +170,10 @@ export function ScheduleGrid({
   const colorOf = (sid: string) => TINTS[subjectIds.indexOf(sid) % TINTS.length];
 
   // Today indicator (1..7 schema). Sunday=0 in JS → 7 in schema.
-  const todayDow = new Date().getDay() === 0 ? 7 : new Date().getDay();
+  // Só marca "hoje" se estivermos a ver a semana atual (ou se weekStart não foi passado)
+  const realTodayDow = new Date().getDay() === 0 ? 7 : new Date().getDay();
+  const showingCurrentWeek = !weekStart || weekDates.some((d) => d && isToday(d));
+  const todayDow = showingCurrentWeek ? realTodayDow : -1;
 
   // Mobile: single-day view via tabs
   const [activeDay, setActiveDay] = useState(Math.min(5, Math.max(1, todayDow)));
@@ -246,9 +306,12 @@ export function ScheduleGrid({
               <p className="text-[15px] font-semibold leading-tight">
                 {b.subject.name}
               </p>
-              <p className="text-[12px] opacity-85">
-                {showClass ? b.class.name : b.teacher?.name ?? ""}
-              </p>
+              {b.teacher && (
+                <p className="text-[12px] opacity-90">{b.teacher.name}</p>
+              )}
+              {showClass && (
+                <p className="text-[11px] opacity-75">{b.class.name}</p>
+              )}
             </div>
           ))
         )}
@@ -269,19 +332,27 @@ export function ScheduleGrid({
             }}
           >
             <div />
-            {DAYS.map((d) => (
-              <div
-                key={`h-${d.value}`}
-                className={cn(
-                  "flex items-center justify-center text-[11px] font-semibold uppercase tracking-[0.04em]",
-                  d.value === todayDow
-                    ? "text-[var(--tint-blue)] bg-[var(--accent)]"
-                    : "text-[var(--muted-foreground)]",
-                )}
-              >
-                {d.short}
-              </div>
-            ))}
+            {DAYS.map((d, i) => {
+              const date = weekDates[i];
+              return (
+                <div
+                  key={`h-${d.value}`}
+                  className={cn(
+                    "flex flex-col items-center justify-center text-[11px] font-semibold uppercase tracking-[0.04em]",
+                    d.value === todayDow
+                      ? "text-[var(--tint-blue)] bg-[var(--accent)]"
+                      : "text-[var(--muted-foreground)]",
+                  )}
+                >
+                  <span>{d.short}</span>
+                  {date && (
+                    <span className="text-[10px] font-normal tabular-nums opacity-80">
+                      {format(date, "d MMM", { locale: pt })}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Body */}
@@ -377,13 +448,20 @@ export function ScheduleGrid({
                     b.room ? ` · ${b.room.name}` : ""
                   }`}
                 >
-                  <p className="text-[12px] font-semibold leading-tight line-clamp-2">
+                  <p className="text-[12px] font-semibold leading-tight line-clamp-1">
                     {b.subject.name}
                   </p>
-                  <p className="text-[10px] opacity-90 leading-tight line-clamp-1">
-                    {showClass ? b.class.name : b.teacher?.name ?? ""}
-                  </p>
-                  {b.room && heightFor(b.startTime, b.endTime) >= 50 && (
+                  {b.teacher && (
+                    <p className="text-[10px] opacity-95 leading-tight line-clamp-1">
+                      {b.teacher.name}
+                    </p>
+                  )}
+                  {showClass && heightFor(b.startTime, b.endTime) >= 60 && (
+                    <p className="text-[10px] opacity-75 leading-tight line-clamp-1">
+                      {b.class.name}
+                    </p>
+                  )}
+                  {b.room && heightFor(b.startTime, b.endTime) >= 70 && (
                     <p className="text-[10px] opacity-80 leading-tight line-clamp-1">
                       {b.room.name}
                     </p>
@@ -401,8 +479,7 @@ export function ScheduleGrid({
 
         {hiddenCount > 0 && (
           <p className="mt-2 text-[11px] text-[var(--muted-foreground)]">
-            {hiddenCount} bloco{hiddenCount !== 1 ? "s" : ""} fora do horário escolar
-            configurado ({dayStart}–{dayEnd}). Ajuste em Definições.
+            {hiddenCount} bloco{hiddenCount !== 1 ? "s" : ""} fora dos dias úteis (Seg–Sex).
           </p>
         )}
       </div>

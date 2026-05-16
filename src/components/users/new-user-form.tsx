@@ -81,7 +81,11 @@ export function NewUserForm() {
 
           <div className="space-y-2">
             <Label>Perfil</Label>
-            <Select defaultValue="STUDENT" onValueChange={(v: string | null) => setValue("role", (v ?? "STUDENT") as FormData["role"])}>
+            <Select
+              defaultValue="STUDENT"
+              items={Object.fromEntries(ROLES.map((r) => [r.value, r.label]))}
+              onValueChange={(v: string | null) => setValue("role", (v ?? "STUDENT") as FormData["role"])}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ROLES.map((r) => (

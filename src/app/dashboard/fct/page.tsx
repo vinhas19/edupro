@@ -5,6 +5,7 @@ import { Role } from "@prisma/client";
 import { hasRole, FCT_STATUS_LABELS } from "@/lib/permissions";
 import Link from "next/link";
 import { Plus, Briefcase, Clock, CheckCircle, AlertCircle, Building2 } from "lucide-react";
+import { FctDocumentRow } from "@/components/fct/fct-document-row";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,8 +26,8 @@ export default async function FctPage() {
 
   const { id: userId, role, schoolId } = session.user;
 
-  // ─── Student View ────────────────────────────────────────────────────────
-  if (!hasRole(role, Role.TEACHER)) {
+  // ─── Student View — só a sua FCT ─────────────────────────────────────────
+  if (role === Role.STUDENT) {
     const fctRecord = await prisma.fctRecord.findFirst({
       where: { studentId: userId },
       include: { documents: true, reports: true },
@@ -41,113 +42,76 @@ export default async function FctPage() {
             <CardContent className="py-12 text-center">
               <Briefcase className="h-12 w-12 text-muted-foreground/40 mx-auto mb-3" />
               <p className="font-medium">Sem FCT atribuída</p>
-              <p className="text-sm text-muted-foreground">A sua FCT ainda não foi registada.</p>
+              <p className="text-sm text-muted-foreground">A tua FCT ainda não foi registada.</p>
             </CardContent>
           </Card>
         </div>
       );
     }
 
-    const pct = Math.min(100, Math.round((fctRecord.completedHours / fctRecord.requiredHours) * 100));
+    return <StudentFctCard record={fctRecord} ownLabel="A Minha FCT" />;
+  }
+
+  // ─── Guardian View — FCT do(s) educando(s) ───────────────────────────────
+  if (role === Role.GUARDIAN) {
+    const wards = await prisma.guardianLink.findMany({
+      where: { guardianId: userId },
+      include: {
+        student: {
+          include: {
+            fctRecords: {
+              include: { documents: true },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    if (wards.length === 0) {
+      return (
+        <div className="space-y-4">
+          <h1 className="text-2xl font-bold">FCT do(s) educando(s)</h1>
+          <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">Sem educandos ligados.</CardContent></Card>
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">A Minha FCT</h1>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Building2 className="h-6 w-6 text-blue-500" />
-                <div>
-                  <CardTitle className="text-base">{fctRecord.companyName}</CardTitle>
-                  {fctRecord.supervisorName && (
-                    <p className="text-xs text-muted-foreground">Supervisor: {fctRecord.supervisorName}</p>
-                  )}
-                </div>
-              </div>
-              <Badge className={STATUS_COLORS[fctRecord.status]}>
-                {FCT_STATUS_LABELS[fctRecord.status]}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div className="rounded-lg border p-3">
-                <p className="text-xl font-bold text-blue-600">{fctRecord.completedHours}</p>
-                <p className="text-xs text-muted-foreground">Horas Realizadas</p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xl font-bold">{fctRecord.requiredHours}</p>
-                <p className="text-xs text-muted-foreground">Horas Obrigatórias</p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xl font-bold text-green-600">{pct}%</p>
-                <p className="text-xs text-muted-foreground">Concluído</p>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-xl font-bold">{fctRecord.grade ?? "—"}</p>
-                <p className="text-xs text-muted-foreground">Nota Final</p>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>Progresso</span>
-                <span>{fctRecord.completedHours}h / {fctRecord.requiredHours}h</span>
-              </div>
-              <Progress value={pct} className="h-2" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground text-xs">Início</p>
-                <p className="font-medium">{format(new Date(fctRecord.startDate), "d MMM yyyy", { locale: pt })}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs">Fim</p>
-                <p className="font-medium">{format(new Date(fctRecord.endDate), "d MMM yyyy", { locale: pt })}</p>
-              </div>
-            </div>
-
-            {fctRecord.notes && (
-              <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Observações</p>
-                <p>{fctRecord.notes}</p>
-              </div>
-            )}
-
-            {/* Documents */}
-            {fctRecord.documents.length > 0 && (
-              <div>
-                <p className="text-sm font-medium mb-2">Documentos</p>
-                <div className="space-y-1">
-                  {fctRecord.documents.map((doc) => (
-                    <a
-                      key={doc.id}
-                      href={doc.fileUrl}
-                      target="_blank"
-                      className="flex items-center gap-2 rounded border px-3 py-2 text-sm hover:bg-gray-50"
-                    >
-                      <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                      {doc.title}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <h1 className="text-2xl font-bold">FCT do(s) educando(s)</h1>
+        {wards.map((w) => {
+          const fct = w.student.fctRecords[0];
+          if (!fct) {
+            return (
+              <Card key={w.id}>
+                <CardHeader><CardTitle className="text-base">{w.student.name}</CardTitle></CardHeader>
+                <CardContent className="text-sm text-muted-foreground">Sem FCT atribuída.</CardContent>
+              </Card>
+            );
+          }
+          return <StudentFctCard key={w.id} record={fct} ownLabel={`FCT de ${w.student.name}`} />;
+        })}
       </div>
     );
   }
 
-  // ─── Staff View ───────────────────────────────────────────────────────────
+  // ─── Staff View — Admin / DirCurso / DT ──────────────────────────────────
+  // Professor (não-DT) NÃO tem acesso a esta página
+  if (role === Role.TEACHER) redirect("/dashboard");
+
+  const where =
+    role === Role.SCHOOL_ADMIN || role === Role.SUPER_ADMIN
+      ? { class: { course: { schoolId } } }
+      : role === Role.COURSE_DIRECTOR
+        ? { class: { course: { schoolId, directorId: userId } } }
+        : role === Role.CLASS_DIRECTOR
+          ? { class: { classDirectorId: userId } }
+          : { class: { course: { schoolId } } };
+
   const fctRecords = await prisma.fctRecord.findMany({
-    where: {
-      class: { course: { schoolId } },
-      ...(role === Role.CLASS_DIRECTOR ? { class: { classDirectorId: userId } } : {}),
-    },
+    where,
     include: {
       student: { select: { id: true, name: true } },
       class: { select: { name: true } },
@@ -227,6 +191,106 @@ export default async function FctPage() {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function StudentFctCard({
+  record,
+  ownLabel,
+}: {
+  record: {
+    id: string;
+    companyName: string;
+    supervisorName: string | null;
+    status: keyof typeof STATUS_COLORS;
+    completedHours: number;
+    requiredHours: number;
+    grade: number | null;
+    startDate: Date;
+    endDate: Date;
+    notes: string | null;
+    documents: { id: string; title: string; fileUrl: string }[];
+  };
+  ownLabel: string;
+}) {
+  const pct = Math.min(100, Math.round((record.completedHours / record.requiredHours) * 100));
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">{ownLabel}</h1>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-6 w-6 text-blue-500" />
+              <div>
+                <CardTitle className="text-base">{record.companyName}</CardTitle>
+                {record.supervisorName && (
+                  <p className="text-xs text-muted-foreground">Supervisor: {record.supervisorName}</p>
+                )}
+              </div>
+            </div>
+            <Badge className={STATUS_COLORS[record.status]}>{FCT_STATUS_LABELS[record.status]}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div className="rounded-lg border p-3">
+              <p className="text-xl font-bold text-blue-600">{record.completedHours}</p>
+              <p className="text-xs text-muted-foreground">Horas Realizadas</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xl font-bold">{record.requiredHours}</p>
+              <p className="text-xs text-muted-foreground">Horas Obrigatórias</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xl font-bold text-green-600">{pct}%</p>
+              <p className="text-xs text-muted-foreground">Concluído</p>
+            </div>
+            <div className="rounded-lg border p-3">
+              <p className="text-xl font-bold">{record.grade ?? "—"}</p>
+              <p className="text-xs text-muted-foreground">Nota Final</p>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>Progresso</span>
+              <span>{record.completedHours}h / {record.requiredHours}h</span>
+            </div>
+            <Progress value={pct} className="h-2" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground text-xs">Início</p>
+              <p className="font-medium">{format(new Date(record.startDate), "d MMM yyyy", { locale: pt })}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Fim</p>
+              <p className="font-medium">{format(new Date(record.endDate), "d MMM yyyy", { locale: pt })}</p>
+            </div>
+          </div>
+
+          {record.notes && (
+            <div className="rounded-lg bg-muted/50 p-3 text-sm">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Observações</p>
+              <p>{record.notes}</p>
+            </div>
+          )}
+
+          {record.documents.length > 0 && (
+            <div>
+              <p className="text-sm font-medium mb-2">Documentos</p>
+              <ul className="space-y-1">
+                {record.documents.map((doc) => (
+                  <FctDocumentRow key={doc.id} title={doc.title} type="" url={doc.fileUrl} />
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

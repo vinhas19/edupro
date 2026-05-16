@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2, Upload } from "lucide-react";
 import { useR2Upload, type R2Visibility, type UploadedFile } from "@/lib/use-r2-upload";
@@ -18,6 +19,12 @@ interface Props {
   size?: "sm" | "default";
   variant?: "default" | "outline";
   onUploaded?: (files: UploadedFile[]) => void;
+  /**
+   * Quando true (default), chama `router.refresh()` após upload bem-sucedido,
+   * para que páginas server-rendered (documentos) mostrem o novo ficheiro
+   * sem precisar de F5.
+   */
+  autoRefresh?: boolean;
 }
 
 export function R2UploadButton({
@@ -32,7 +39,9 @@ export function R2UploadButton({
   size = "default",
   variant = "default",
   onUploaded,
+  autoRefresh = true,
 }: Props) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { uploadMany, uploading, progress } = useR2Upload({
     visibility,
@@ -50,6 +59,7 @@ export function R2UploadButton({
     if (result.length > 0) {
       toast.success(`${result.length} ficheiro(s) carregado(s)`);
       onUploaded?.(result);
+      if (autoRefresh) router.refresh();
     }
     if (inputRef.current) inputRef.current.value = "";
   }

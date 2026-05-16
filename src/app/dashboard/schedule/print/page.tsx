@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
+import { PrintButton } from "@/components/schedule/print-button";
 
 const DAYS = [
   { value: 1, label: "Segunda" },
@@ -65,7 +66,6 @@ export default async function PrintSchedulePage({
     orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
   });
 
-  // Group by day
   const byDay = new Map<number, typeof blocks>();
   for (const b of blocks) {
     const arr = byDay.get(b.dayOfWeek) ?? [];
@@ -74,60 +74,69 @@ export default async function PrintSchedulePage({
   }
 
   return (
-    <html lang="pt-PT">
-      <head>
-        <title>{title} — EduPro</title>
-        <style>{`
-          @page { size: A4 landscape; margin: 14mm; }
-          html, body { background: white; color: black; margin: 0; font-family: -apple-system, "Segoe UI", "Inter", sans-serif; }
-          h1 { font-size: 18pt; margin: 0 0 4pt; }
-          .meta { color: #555; font-size: 9pt; margin-bottom: 12pt; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 0.5pt solid #999; padding: 4pt 6pt; text-align: left; vertical-align: top; font-size: 9pt; }
-          th { background: #f3f3f5; font-weight: 600; }
-          .time { font-variant-numeric: tabular-nums; white-space: nowrap; color: #666; }
-          .subj { font-weight: 600; }
-          .meta-row td { color: #666; font-size: 8pt; }
-          .print-btn { background: #007aff; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; }
-          @media print { .no-print { display: none; } }
-        `}</style>
-      </head>
-      <body>
-        <div className="no-print" style={{ padding: "12px 16px", borderBottom: "1px solid #ddd", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <a href="/dashboard/schedule" style={{ color: "#007aff" }}>← Voltar</a>
-          <button className="print-btn" onClick={() => (typeof window !== "undefined" ? window.print() : undefined)} style={{ background: "#007aff", color: "white", border: "none", padding: "8px 14px", borderRadius: 6 }}>
-            🖨️ Imprimir / Guardar PDF
-          </button>
+    <>
+      <style>{`
+        @page { size: A4 landscape; margin: 14mm; }
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; }
+        }
+      `}</style>
+      <div
+        className="schedule-print-overlay fixed inset-0 z-[100] bg-white text-black overflow-auto"
+        style={{ printColorAdjust: "exact" }}
+      >
+        <div className="no-print flex items-center justify-between gap-3 border-b bg-white px-4 py-3 sticky top-0">
+          <a href="/dashboard/schedule" className="text-sm text-blue-600 hover:underline">
+            ← Voltar
+          </a>
+          <PrintButton />
         </div>
 
-        <main style={{ padding: "16px" }}>
-          <h1>{title}</h1>
-          <p className="meta">
+        <main className="p-6 print:p-0 max-w-[1400px] mx-auto">
+          <h1 className="text-2xl font-bold mb-1">{title}</h1>
+          <p className="text-xs text-gray-600 mb-4">
             Horário: {school?.dayStart}–{school?.dayEnd} · Gerado em {new Date().toLocaleString("pt-PT")}
           </p>
 
-          <table>
+          <table className="w-full border-collapse text-[10pt]">
             <thead>
               <tr>
-                {DAYS.map((d) => <th key={d.value}>{d.label}</th>)}
+                {DAYS.map((d) => (
+                  <th
+                    key={d.value}
+                    className="border border-gray-400 bg-gray-100 px-2 py-1.5 text-left font-semibold"
+                  >
+                    {d.label}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
               <tr>
                 {DAYS.map((d) => {
-                  const dayBlocks = (byDay.get(d.value) ?? []).slice().sort(
-                    (a, b) => timeToMin(a.startTime) - timeToMin(b.startTime),
-                  );
+                  const dayBlocks = (byDay.get(d.value) ?? [])
+                    .slice()
+                    .sort((a, b) => timeToMin(a.startTime) - timeToMin(b.startTime));
                   return (
-                    <td key={d.value} style={{ width: "20%", minHeight: "300pt" }}>
+                    <td
+                      key={d.value}
+                      className="border border-gray-400 align-top p-2"
+                      style={{ width: "20%", minHeight: "400pt" }}
+                    >
                       {dayBlocks.length === 0 ? (
-                        <span style={{ color: "#aaa", fontSize: 8 }}>—</span>
+                        <span className="text-gray-400 text-[8pt]">—</span>
                       ) : (
                         dayBlocks.map((b) => (
-                          <div key={b.id} style={{ marginBottom: 6, paddingBottom: 6, borderBottom: "0.5pt dashed #ccc" }}>
-                            <div className="time">{b.startTime}–{b.endTime}</div>
-                            <div className="subj">{b.subject.name}</div>
-                            <div style={{ fontSize: 8, color: "#666" }}>
+                          <div
+                            key={b.id}
+                            className="mb-1.5 pb-1.5 border-b border-dashed border-gray-300 last:border-0"
+                          >
+                            <div className="text-gray-600 tabular-nums whitespace-nowrap text-[8.5pt]">
+                              {b.startTime}–{b.endTime}
+                            </div>
+                            <div className="font-semibold">{b.subject.name}</div>
+                            <div className="text-[8pt] text-gray-600">
                               {b.class.name}
                               {b.teacher && ` · ${b.teacher.name}`}
                               {b.room && ` · ${b.room.name}`}
@@ -142,7 +151,7 @@ export default async function PrintSchedulePage({
             </tbody>
           </table>
         </main>
-      </body>
-    </html>
+      </div>
+    </>
   );
 }

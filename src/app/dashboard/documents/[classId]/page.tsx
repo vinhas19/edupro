@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { canReadClass } from "@/lib/docs-permissions";
+import { canReadClass, visibleSubjectIds } from "@/lib/docs-permissions";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import Link from "next/link";
@@ -19,12 +19,15 @@ export default async function ClassDocumentsPage({
   const ok = await canReadClass(session.user.id, session.user.role, session.user.schoolId, classId);
   if (!ok) notFound();
 
+  const visibleIds = await visibleSubjectIds(session.user.id, session.user.role, classId);
+
   const cls = await prisma.class.findUnique({
     where: { id: classId },
     include: {
       course: {
         include: {
           subjects: {
+            where: visibleIds === "ALL" ? undefined : { id: { in: visibleIds } },
             include: { _count: { select: { modules: true } } },
             orderBy: { order: "asc" },
           },

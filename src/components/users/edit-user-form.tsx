@@ -76,7 +76,11 @@ export function EditUserForm({ user, isSelf }: Props) {
           <>
             <div>
               <Label>Perfil</Label>
-              <Select value={role} onValueChange={(v: string | null) => setRole(v ?? role)}>
+              <Select
+                value={role}
+                items={Object.fromEntries(ROLES.map((r) => [r.value, r.label]))}
+                onValueChange={(v: string | null) => setRole(v ?? role)}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ROLES.map((r) => (

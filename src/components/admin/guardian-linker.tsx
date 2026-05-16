@@ -82,7 +82,11 @@ export function GuardianLinker({ guardians, students, links }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_140px_auto] gap-2 items-end">
         <div className="space-y-1.5">
           <Label>Encarregado</Label>
-          <Select value={guardianId} onValueChange={(v: string | null) => setGuardianId(v ?? "")}>
+          <Select
+            value={guardianId}
+            items={Object.fromEntries(guardians.map((g) => [g.id, g.name]))}
+            onValueChange={(v: string | null) => setGuardianId(v ?? "")}
+          >
             <SelectTrigger><SelectValue placeholder="Selecionar EE..." /></SelectTrigger>
             <SelectContent>
               {guardians.map((g) => (
@@ -93,7 +97,11 @@ export function GuardianLinker({ guardians, students, links }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label>Aluno</Label>
-          <Select value={studentId} onValueChange={(v: string | null) => setStudentId(v ?? "")}>
+          <Select
+            value={studentId}
+            items={Object.fromEntries(students.map((s) => [s.id, s.name]))}
+            onValueChange={(v: string | null) => setStudentId(v ?? "")}
+          >
             <SelectTrigger><SelectValue placeholder="Selecionar aluno..." /></SelectTrigger>
             <SelectContent>
               {students.map((s) => (

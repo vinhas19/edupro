@@ -10,6 +10,7 @@ import { ArrowLeft, Award, User } from "lucide-react";
 import Link from "next/link";
 import { PhaseRow } from "@/components/pap/phase-row";
 import { PapStatusForm } from "@/components/pap/pap-status-form";
+import { AdvisorPicker } from "@/components/pap/advisor-picker";
 
 const STATUS_COLORS = {
   PROPOSAL: "bg-blue-100 text-blue-700",
@@ -44,6 +45,19 @@ export default async function PapDetailPage({ params }: { params: Promise<{ id: 
   const canEdit = hasRole(session.user.role, Role.CLASS_DIRECTOR);
   if (!isStudent && !isAdvisor && !canEdit) redirect("/dashboard/pap");
 
+  // Lista de professores disponíveis para orientador (DT é também professor)
+  const teachers = canEdit
+    ? await prisma.user.findMany({
+        where: {
+          schoolId: session.user.schoolId,
+          active: true,
+          role: { in: [Role.TEACHER, Role.CLASS_DIRECTOR, Role.COURSE_DIRECTOR] },
+        },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+    : [];
+
   const totalWeight = pap.evaluations.reduce((s, e) => s + e.weight, 0);
   const weighted = totalWeight > 0
     ? pap.evaluations.reduce((s, e) => s + e.grade * e.weight, 0) / totalWeight
@@ -72,11 +86,15 @@ export default async function PapDetailPage({ params }: { params: Promise<{ id: 
             <Award className="h-4 w-4 text-purple-500" />
             {pap.title ?? "Tema por definir"}
           </CardTitle>
-          {pap.advisor && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <User className="h-3 w-3" /> Orientador: {pap.advisor.name}
-            </p>
-          )}
+          <div className="pt-1">
+            <AdvisorPicker
+              papId={pap.id}
+              currentAdvisorId={pap.advisorId}
+              currentAdvisorName={pap.advisor?.name ?? null}
+              teachers={teachers}
+              canEdit={canEdit}
+            />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {pap.description && (

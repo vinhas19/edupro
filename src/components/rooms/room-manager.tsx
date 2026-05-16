@@ -73,7 +73,7 @@ export function RoomManager({ rooms, typeLabels }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label>Tipo</Label>
-          <Select value={type} onValueChange={(v: string | null) => setType(v ?? "CLASSROOM")}>
+          <Select value={type} items={typeLabels} onValueChange={(v: string | null) => setType(v ?? "CLASSROOM")}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {Object.entries(typeLabels).map(([k, v]) => (
@@ -163,7 +163,7 @@ function RoomRow({ room, typeLabels }: { room: Room; typeLabels: Record<string, 
       <li className="py-2 grid grid-cols-[1fr_100px_140px_auto] gap-2 items-center">
         <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" />
         <Input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="h-9" />
-        <Select value={type} onValueChange={(v: string | null) => setType(v ?? "CLASSROOM")}>
+        <Select value={type} items={typeLabels} onValueChange={(v: string | null) => setType(v ?? "CLASSROOM")}>
           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             {Object.entries(typeLabels).map(([k, v]) => (

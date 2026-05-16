@@ -86,7 +86,10 @@ export function NewFctForm({ enrollments }: Props) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label>Aluno</Label>
-            <Select onValueChange={(v: string | null) => setValue("enrollmentId", v ?? "")}>
+            <Select
+              items={Object.fromEntries(enrollments.map((e) => [e.id, `${e.student.name} — ${e.class.name}`]))}
+              onValueChange={(v: string | null) => setValue("enrollmentId", v ?? "")}
+            >
               <SelectTrigger><SelectValue placeholder="Selecionar aluno..." /></SelectTrigger>
               <SelectContent>
                 {enrollments.map((e) => (

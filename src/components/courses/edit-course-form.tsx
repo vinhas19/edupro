@@ -114,7 +114,11 @@ export function EditCourseForm({ course, directors }: Props) {
         </div>
         <div>
           <Label>Diretor de Curso</Label>
-          <Select value={directorId} onValueChange={(v: string | null) => setDirectorId(v ?? "")}>
+          <Select
+            value={directorId}
+            items={Object.fromEntries(directors.map((d) => [d.id, d.name]))}
+            onValueChange={(v: string | null) => setDirectorId(v ?? "")}
+          >
             <SelectTrigger><SelectValue placeholder="Sem diretor" /></SelectTrigger>
             <SelectContent>
               {directors.map((d) => (

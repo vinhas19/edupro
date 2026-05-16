@@ -20,6 +20,10 @@ type NavItem = {
   icon: React.ElementType;
   tint: string;
   minRole: Role;
+  // Whitelist: se definido, só estes roles vêem o item (ignora minRole).
+  allowedRoles?: Role[];
+  // Blacklist: roles que NUNCA vêem este item, mesmo cumprindo minRole.
+  hideForRoles?: Role[];
   badge?: number;
 };
 
@@ -33,8 +37,8 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Geral",
     items: [
       { label: "Painel",        href: "/dashboard",                icon: LayoutGrid,    tint: "var(--tint-blue)",   minRole: Role.STUDENT },
-      { label: "Horário",       href: "/dashboard/schedule",       icon: Calendar,      tint: "var(--tint-red)",    minRole: Role.STUDENT },
-      { label: "Calendário",    href: "/dashboard/calendar",       icon: CalendarDays,  tint: "var(--tint-orange)", minRole: Role.STUDENT },
+      { label: "Horário",       href: "/dashboard/schedule",       icon: Calendar,      tint: "var(--tint-red)",    minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN] },
+      { label: "Calendário",    href: "/dashboard/calendar",       icon: CalendarDays,  tint: "var(--tint-orange)", minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN] },
       { label: "Mensagens",     href: "/dashboard/messages",       icon: MessageSquare, tint: "var(--tint-green)",  minRole: Role.STUDENT },
       { label: "Comunicações",  href: "/dashboard/notifications",  icon: Bell,          tint: "var(--tint-yellow)", minRole: Role.STUDENT },
     ],
@@ -43,10 +47,11 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Ensino",
     items: [
       { label: "Sumários",          href: "/dashboard/lessons",                icon: ClipboardList, tint: "var(--tint-indigo)", minRole: Role.TEACHER },
-      { label: "Assiduidade",       href: "/dashboard/attendance",             icon: UserCheck,     tint: "var(--tint-green)",  minRole: Role.STUDENT },
+      { label: "Trabalhos",         href: "/dashboard/assignments",            icon: ClipboardList, tint: "var(--tint-orange)", minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN] },
+      { label: "Assiduidade",       href: "/dashboard/attendance",             icon: UserCheck,     tint: "var(--tint-green)",  minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN] },
       { label: "Justificações",     href: "/dashboard/attendance/justifications", icon: FileCheck,  tint: "var(--tint-orange)", minRole: Role.CLASS_DIRECTOR },
-      { label: "Notas & Módulos",   href: "/dashboard/modules",                icon: BarChart3,     tint: "var(--tint-pink)",   minRole: Role.STUDENT },
-      { label: "Boletim",           href: "/dashboard/boletim",                icon: FileCheck,     tint: "var(--tint-green)",  minRole: Role.STUDENT },
+      { label: "Notas & Módulos",   href: "/dashboard/modules",                icon: BarChart3,     tint: "var(--tint-pink)",   minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN] },
+      { label: "Boletim",           href: "/dashboard/boletim",                icon: FileCheck,     tint: "var(--tint-green)",  minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN] },
       { label: "Disciplinas",       href: "/dashboard/subjects",               icon: BookOpen,      tint: "var(--tint-purple)", minRole: Role.TEACHER },
       { label: "Cursos & Turmas",   href: "/dashboard/courses",                icon: GraduationCap, tint: "var(--tint-orange)", minRole: Role.TEACHER },
     ],
@@ -54,15 +59,17 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: "Família",
     items: [
-      { label: "Portal do EE", href: "/dashboard/guardian", icon: Heart, tint: "var(--tint-indigo)", minRole: Role.GUARDIAN },
+      // Portal do EE: APENAS encarregados (não aparece para alunos/profs/admins)
+      { label: "Portal do EE", href: "/dashboard/guardian", icon: Heart, tint: "var(--tint-indigo)", minRole: Role.STUDENT, allowedRoles: [Role.GUARDIAN] },
     ],
   },
   {
     label: "Profissional",
     items: [
+      // FCT/PAP: aluno + EE + staff (não para professores que não sejam DT)
       { label: "FCT",         href: "/dashboard/fct",       icon: Briefcase,  tint: "var(--tint-teal)",  minRole: Role.STUDENT },
       { label: "PAP",         href: "/dashboard/pap",       icon: Award,      tint: "var(--tint-brown)", minRole: Role.STUDENT },
-      { label: "Documentos",  href: "/dashboard/documents", icon: FolderOpen, tint: "var(--tint-gray)",  minRole: Role.STUDENT },
+      { label: "Documentos",  href: "/dashboard/documents", icon: FolderOpen, tint: "var(--tint-gray)",  minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN] },
     ],
   },
   {
@@ -119,7 +126,13 @@ export function Sidebar({ userRole, userName, userEmail, schoolName, unreadMessa
   const filteredSections = NAV_SECTIONS.map((sec) => ({
     ...sec,
     items: sec.items
-      .filter((it) => hasRole(userRole, it.minRole))
+      .filter((it) => {
+        // Whitelist tem prioridade absoluta
+        if (it.allowedRoles) return it.allowedRoles.includes(userRole);
+        // Blacklist exclui após cumprir hierarquia
+        if (it.hideForRoles?.includes(userRole)) return false;
+        return hasRole(userRole, it.minRole);
+      })
       .filter((it) => !search || it.label.toLowerCase().includes(search.toLowerCase())),
   })).filter((s) => s.items.length > 0);
 

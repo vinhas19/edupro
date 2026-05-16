@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
-import { hasRole } from "@/lib/permissions";
+import { hasRole, isTeachingRole } from "@/lib/permissions";
 import Link from "next/link";
 import { Plus, FileText, Check, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,8 @@ export default async function LessonsPage({
 
   const lessons = await prisma.lesson.findMany({
     where: {
-      ...(role === Role.TEACHER
+      // DT também é professor: filtra pelas suas aulas. Admin/CourseDir veem tudo.
+      ...(isTeachingRole(role) && !hasRole(role, Role.SCHOOL_ADMIN)
         ? { teacherId: userId }
         : { class: { course: { schoolId } } }),
     },

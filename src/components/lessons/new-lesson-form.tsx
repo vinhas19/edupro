@@ -87,7 +87,10 @@ export function NewLessonForm({ assignments, teacherId }: Props) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label>Disciplina / Turma</Label>
-            <Select onValueChange={(v: string | null) => setValue("subjectAssignmentId", v ?? "")}>
+            <Select
+              items={Object.fromEntries(assignments.map((a) => [a.id, `${a.subject.name} — ${a.class.name}`]))}
+              onValueChange={(v: string | null) => setValue("subjectAssignmentId", v ?? "")}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecionar disciplina..." />
               </SelectTrigger>

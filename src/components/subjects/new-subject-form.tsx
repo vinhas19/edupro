@@ -84,7 +84,11 @@ export function NewSubjectForm({ courses, defaultCourseId }: Props) {
       <CardContent className="pt-6 space-y-4">
         <div className="space-y-2">
           <Label>Curso</Label>
-          <Select value={courseId} onValueChange={(v: string | null) => setCourseId(v ?? "")}>
+          <Select
+            value={courseId}
+            items={Object.fromEntries(courses.map((c) => [c.id, `${c.name} (${c.code})`]))}
+            onValueChange={(v: string | null) => setCourseId(v ?? "")}
+          >
             <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
             <SelectContent>
               {courses.map((c) => (
@@ -108,7 +112,17 @@ export function NewSubjectForm({ courses, defaultCourseId }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label>Componente de Formação</Label>
-            <Select value={component} onValueChange={(v: string | null) => setComponent(v ?? "TECHNICAL")}>
+            <Select
+              value={component}
+              items={{
+                SOCIOCULTURAL: "Sociocultural",
+                SCIENTIFIC: "Científica",
+                TECHNICAL: "Técnica/Tecnológica",
+                FCT: "FCT",
+                PAP: "PAP",
+              }}
+              onValueChange={(v: string | null) => setComponent(v ?? "TECHNICAL")}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="SOCIOCULTURAL">Sociocultural</SelectItem>

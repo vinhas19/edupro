@@ -6,6 +6,7 @@ import { hasRole } from "@/lib/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { JustificationDecision } from "@/components/attendance/justification-decision";
+import { AttachmentChip } from "@/components/files/attachment-chip";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import Link from "next/link";
@@ -117,14 +118,9 @@ export default async function JustificationsPage({
                 </div>
                 <p className="text-[13px] whitespace-pre-wrap">{j.reason}</p>
                 {j.documentUrl && (
-                  <a
-                    href={j.documentUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex text-[12px] text-[var(--primary)] hover:underline"
-                  >
-                    Ver atestado/comprovativo
-                  </a>
+                  <div className="flex flex-wrap gap-1.5">
+                    <AttachmentChip name="Atestado/comprovativo" url={j.documentUrl} />
+                  </div>
                 )}
                 {j.approvedBy && (
                   <p className="text-[11px] text-[var(--muted-foreground)]">

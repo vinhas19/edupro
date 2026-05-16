@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
-import { hasRole, COMPONENT_LABELS } from "@/lib/permissions";
+import { hasRole, isTeachingRole, COMPONENT_LABELS } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,8 @@ export default async function SubjectsPage() {
   const subjects = await prisma.subject.findMany({
     where: {
       course: { schoolId },
-      ...(role === Role.TEACHER
+      // Profs e DTs só veem as disciplinas que lecionam; admins/dir.curso veem tudo
+      ...(isTeachingRole(role) && !hasRole(role, Role.COURSE_DIRECTOR)
         ? { subjectAssignments: { some: { teacherId: userId } } }
         : {}),
     },

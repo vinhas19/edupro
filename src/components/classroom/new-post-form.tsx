@@ -162,7 +162,11 @@ export function NewPostForm({ classId, topics, subjects }: Props) {
           {topics.length > 0 && (
             <div>
               <Label>Tópico</Label>
-              <Select value={topicId} onValueChange={(v: string | null) => setTopicId(v ?? "")}>
+              <Select
+                value={topicId}
+                items={Object.fromEntries(topics.map((t) => [t.id, t.name]))}
+                onValueChange={(v: string | null) => setTopicId(v ?? "")}
+              >
                 <SelectTrigger><SelectValue placeholder="Sem tópico" /></SelectTrigger>
                 <SelectContent>
                   {topics.map((t) => (
@@ -175,7 +179,11 @@ export function NewPostForm({ classId, topics, subjects }: Props) {
           {subjects.length > 0 && (
             <div>
               <Label>Disciplina (opcional)</Label>
-              <Select value={subjectId} onValueChange={(v: string | null) => setSubjectId(v ?? "")}>
+              <Select
+                value={subjectId}
+                items={Object.fromEntries(subjects.map((s) => [s.id, s.name]))}
+                onValueChange={(v: string | null) => setSubjectId(v ?? "")}
+              >
                 <SelectTrigger><SelectValue placeholder="Sem disciplina" /></SelectTrigger>
                 <SelectContent>
                   {subjects.map((s) => (
@@ -194,6 +202,7 @@ export function NewPostForm({ classId, topics, subjects }: Props) {
               size="sm"
               variant="outline"
               label="Anexar"
+              autoRefresh={false}
               onUploaded={(items) => setAttachments((a) => [...a, ...items])}
             />
             {attachments.map((a) => (

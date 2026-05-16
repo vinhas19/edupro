@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Save, FileText } from "lucide-react";
+import { Loader2, Save, FileText, Eye, Download } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { toast } from "sonner";
+import { downloadFile } from "@/lib/download-file";
 
 interface Submission {
   id: string;
@@ -134,10 +135,25 @@ function SubmissionCard({ submission, maxGrade }: { submission: Submission; maxG
         <ul className="space-y-0.5">
           {submission.files.map((f) => (
             <li key={f.id} className="flex items-center gap-1.5 text-[12px]">
-              <FileText className="h-3 w-3 text-[var(--muted-foreground)]" />
-              <a href={f.url} target="_blank" rel="noreferrer" className="text-[var(--primary)] hover:underline truncate">
-                {f.name}
+              <FileText className="h-3 w-3 text-[var(--muted-foreground)] shrink-0" />
+              <span className="truncate flex-1">{f.name}</span>
+              <a
+                href={f.url}
+                target="_blank"
+                rel="noreferrer"
+                title="Visualizar"
+                className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-[var(--muted)]"
+              >
+                <Eye className="h-3 w-3" />
               </a>
+              <button
+                type="button"
+                title="Transferir"
+                onClick={() => downloadFile(f.url, f.name)}
+                className="inline-flex h-5 w-5 items-center justify-center rounded hover:bg-[var(--muted)]"
+              >
+                <Download className="h-3 w-3" />
+              </button>
             </li>
           ))}
         </ul>

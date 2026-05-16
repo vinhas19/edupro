@@ -108,7 +108,11 @@ export default async function EditSchedulePage({
         <div className="flex-1 max-w-xs">
           <label className="text-xs text-muted-foreground">Turma</label>
           <form action="/dashboard/schedule/edit" method="GET">
-            <Select name="classId" defaultValue={cls.id}>
+            <Select
+              name="classId"
+              defaultValue={cls.id}
+              items={Object.fromEntries(classes.map((c) => [c.id, `${c.name} (${c.course.code}) · ${c.year}º`]))}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {classes.map((c) => (

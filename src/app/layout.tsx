@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -10,11 +11,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt" className="h-full" suppressHydrationWarning>
-      <head>
+      <body className="h-full bg-background font-sans antialiased">
         {/* Theme + Tweaks bootstrap — applies stored prefs before paint to avoid flash */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{
+        <Script id="edupro-bootstrap" strategy="beforeInteractive">
+          {`(function(){try{
               var t=localStorage.getItem('edupro:theme');
               var d=window.matchMedia('(prefers-color-scheme: dark)').matches;
               if(t==='dark'||(!t&&d))document.documentElement.classList.add('dark');
@@ -22,11 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               document.documentElement.dataset.sidebarStyle=sb;
               var cs=localStorage.getItem('edupro:card-style')||'elevated';
               document.documentElement.dataset.cardStyle=cs;
-            }catch(e){}})();`,
-          }}
-        />
-      </head>
-      <body className="h-full bg-background font-sans antialiased">
+            }catch(e){}})();`}
+        </Script>
         {children}
         <Toaster richColors position="top-right" />
       </body>

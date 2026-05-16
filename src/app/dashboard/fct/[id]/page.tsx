@@ -12,6 +12,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { FctProgressForm } from "@/components/fct/fct-progress-form";
+import { FctDocumentRow } from "@/components/fct/fct-document-row";
 
 const STATUS_COLORS = {
   PLANNED: "bg-blue-100 text-blue-700",
@@ -39,7 +40,17 @@ export default async function FctDetailPage({ params }: { params: Promise<{ id: 
 
   const isStudent = fct.studentId === session.user.id;
   const canEdit = hasRole(session.user.role, Role.CLASS_DIRECTOR);
-  if (!isStudent && !canEdit) redirect("/dashboard/fct");
+
+  // EE: acesso à FCT do educando
+  let isGuardianOfStudent = false;
+  if (session.user.role === Role.GUARDIAN) {
+    const link = await prisma.guardianLink.findFirst({
+      where: { guardianId: session.user.id, studentId: fct.studentId },
+    });
+    isGuardianOfStudent = !!link;
+  }
+
+  if (!isStudent && !canEdit && !isGuardianOfStudent) redirect("/dashboard/fct");
 
   const pct = Math.min(100, Math.round((fct.completedHours / fct.requiredHours) * 100));
 
@@ -130,11 +141,7 @@ export default async function FctDetailPage({ params }: { params: Promise<{ id: 
           <CardContent>
             <ul className="space-y-1.5">
               {fct.documents.map((d) => (
-                <li key={d.id}>
-                  <a href={d.fileUrl} target="_blank" rel="noreferrer" className="block rounded border px-3 py-2 text-sm hover:bg-muted">
-                    {d.title} <span className="text-xs text-muted-foreground">({d.type})</span>
-                  </a>
-                </li>
+                <FctDocumentRow key={d.id} title={d.title} type={d.type} url={d.fileUrl} />
               ))}
             </ul>
           </CardContent>

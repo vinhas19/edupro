@@ -87,7 +87,11 @@ export function EditClassForm({ cls, directors, years }: Props) {
           </div>
           <div>
             <Label>Ano Letivo</Label>
-            <Select value={yearId} onValueChange={(v: string | null) => setYearId(v ?? "")}>
+            <Select
+              value={yearId}
+              items={Object.fromEntries(years.map((y) => [y.id, y.label]))}
+              onValueChange={(v: string | null) => setYearId(v ?? "")}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {years.map((y) => (
@@ -99,7 +103,11 @@ export function EditClassForm({ cls, directors, years }: Props) {
         </div>
         <div>
           <Label>Diretor de Turma</Label>
-          <Select value={directorId} onValueChange={(v: string | null) => setDirectorId(v ?? "")}>
+          <Select
+            value={directorId}
+            items={Object.fromEntries(directors.map((d) => [d.id, d.name]))}
+            onValueChange={(v: string | null) => setDirectorId(v ?? "")}
+          >
             <SelectTrigger><SelectValue placeholder="Sem diretor" /></SelectTrigger>
             <SelectContent>
               {directors.map((d) => (

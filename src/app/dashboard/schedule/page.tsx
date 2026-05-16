@@ -2,24 +2,27 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
-import { hasRole } from "@/lib/permissions";
+import { hasRole, isTeachingRole } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { ScheduleGrid } from "@/components/schedule/schedule-grid";
 import { ClassFilter } from "@/components/schedule/class-filter";
+import { WeekNavigator } from "@/components/schedule/week-navigator";
+import { getWeekStartFromSearchParams } from "@/lib/week";
 import Link from "next/link";
-import { Pencil, CalendarRange, Calendar, BookOpen, MapPin, Printer } from "lucide-react";
+import { Pencil, Calendar, BookOpen, MapPin, Printer } from "lucide-react";
 
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ classId?: string }>;
+  searchParams: Promise<{ classId?: string; week?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
   const { id: userId, role, schoolId } = session.user;
-  const { classId } = await searchParams;
+  const { classId, week } = await searchParams;
+  const weekStart = getWeekStartFromSearchParams(week);
 
   const [school, timeSlots] = await Promise.all([
     prisma.school.findUnique({
@@ -56,7 +59,8 @@ export default async function SchedulePage({
         orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
       });
     }
-  } else if (role === Role.TEACHER && !classId) {
+  } else if (isTeachingRole(role) && !hasRole(role, Role.SCHOOL_ADMIN) && !classId) {
+    // Inclui DT — também leciona, vê o seu próprio horário
     viewMode = "teacher";
     blocks = await prisma.scheduleBlock.findMany({
       where: { teacherId: userId },
@@ -112,17 +116,13 @@ export default async function SchedulePage({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <WeekNavigator weekStart={weekStart} />
           {viewMode === "admin" && classes.length > 0 && (
             <ClassFilter classes={classes} defaultValue={classId ?? "ALL"} />
           )}
           <Button variant="outline" size="sm" asChild>
             <Link href={`/dashboard/schedule/print${classId ? `?classId=${classId}` : ""}`} target="_blank">
               <Printer className="mr-1.5 h-3.5 w-3.5" />Imprimir
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/calendar">
-              <CalendarRange className="mr-1.5 h-3.5 w-3.5" />Calendário
             </Link>
           </Button>
           {hasRole(role, Role.SCHOOL_ADMIN) && (
@@ -149,6 +149,7 @@ export default async function SchedulePage({
             dayStart={school?.dayStart ?? "08:00"}
             dayEnd={school?.dayEnd ?? "18:30"}
             timeSlots={timeSlots}
+            weekStart={weekStart}
           />
         )}
       </div>

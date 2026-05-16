@@ -6,11 +6,12 @@ import { hasRole } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar, Paperclip } from "lucide-react";
+import { ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { SubmissionReview } from "@/components/classroom/submission-review";
+import { AttachmentChip } from "@/components/files/attachment-chip";
 
 export default async function AssignmentReviewPage({
   params,
@@ -72,11 +73,7 @@ export default async function AssignmentReviewPage({
           {post.attachments.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {post.attachments.map((f) => (
-                <a key={f.id} href={f.url} target="_blank" rel="noreferrer">
-                  <Badge variant="outline" className="gap-1 hover:bg-muted">
-                    <Paperclip className="h-3 w-3" />{f.name}
-                  </Badge>
-                </a>
+                <AttachmentChip key={f.id} name={f.name} url={f.url} />
               ))}
             </div>
           )}

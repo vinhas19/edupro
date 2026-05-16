@@ -41,6 +41,38 @@ export async function canWriteToSubjectFolder(
 }
 
 /**
+ * Devolve os IDs das disciplinas visíveis para o utilizador numa turma.
+ * - Admin / DT da turma / Aluno / EE: vê todas as disciplinas da turma.
+ * - Professor (não-DT) / DirCurso: só vê as disciplinas que leciona nessa turma.
+ */
+export async function visibleSubjectIds(
+  userId: string,
+  userRole: Role,
+  classId: string,
+): Promise<string[] | "ALL"> {
+  if (hasRole(userRole, Role.SCHOOL_ADMIN)) return "ALL";
+
+  const cls = await prisma.class.findUnique({
+    where: { id: classId },
+    select: { classDirectorId: true },
+  });
+  if (!cls) return [];
+
+  // Aluno e EE veem todas as disciplinas da sua turma
+  if (userRole === Role.STUDENT || userRole === Role.GUARDIAN) return "ALL";
+
+  // DT da turma vê todas as disciplinas
+  if (cls.classDirectorId === userId) return "ALL";
+
+  // Professor / DirCurso → só as suas disciplinas nesta turma
+  const assigns = await prisma.subjectAssignment.findMany({
+    where: { teacherId: userId, classId },
+    select: { subjectId: true },
+  });
+  return assigns.map((a) => a.subjectId);
+}
+
+/**
  * Pode o utilizador ver o conteúdo da turma (lista de disciplinas/módulos/pastas)?
  *  - Aluno: tem de estar enrolled ACTIVE
  *  - EE: tem de estar ligado a um aluno enrolled ACTIVE

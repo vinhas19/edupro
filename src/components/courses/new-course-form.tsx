@@ -106,7 +106,10 @@ export function NewCourseForm({ directors }: Props) {
 
           <div className="space-y-2">
             <Label>Diretor de Curso (opcional)</Label>
-            <Select onValueChange={(v: string | null) => setValue("directorId", v ?? "")}>
+            <Select
+              items={Object.fromEntries(directors.map((d) => [d.id, d.name]))}
+              onValueChange={(v: string | null) => setValue("directorId", v ?? "")}
+            >
               <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
               <SelectContent>
                 {directors.map((d) => (
