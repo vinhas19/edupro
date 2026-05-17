@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   const resetUrl = `${appUrl}/reset-password?token=${token}&school=${encodeURIComponent(schoolSlug)}`;
 
   const { html, text } = passwordResetEmail({
-    appName: "EduPro",
+    appName: "Lectiva",
     schoolName: school.name,
     appUrl,
     recipientName: user.name,
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
   await sendEmail({
     to: user.email,
-    subject: "Redefinir palavra-passe — EduPro",
+    subject: "Redefinir palavra-passe — Lectiva",
     html,
     text,
     tag: "password-reset",

@@ -113,7 +113,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
   });
 
   const ics = buildICal({
-    calName: `EduPro · ${user.name}`,
+    calName: `Lectiva · ${user.name}`,
     blocks,
     defaultStartDate: ay?.startDate ?? new Date(),
     defaultEndDate: ay?.endDate ?? new Date(new Date().getFullYear() + 1, 6, 31),
@@ -123,7 +123,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'inline; filename="edupro.ics"',
+      "Content-Disposition": 'inline; filename="lectiva.ics"',
       "Cache-Control": "private, max-age=300",
     },
   });

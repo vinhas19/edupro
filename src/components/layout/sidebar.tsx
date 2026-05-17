@@ -129,8 +129,8 @@ export function Sidebar({
   // Listen to topbar event to open drawer
   useEffect(() => {
     const handler = () => setOpen(true);
-    window.addEventListener("edupro:open-sidebar", handler);
-    return () => window.removeEventListener("edupro:open-sidebar", handler);
+    window.addEventListener("lectiva:open-sidebar", handler);
+    return () => window.removeEventListener("lectiva:open-sidebar", handler);
   }, []);
 
   const initials = userName
@@ -210,7 +210,7 @@ export function Sidebar({
           </div>
           <div className="min-w-0 leading-tight">
             <div className="text-[13px] font-semibold truncate">{schoolName}</div>
-            <div className="text-[11px] text-[var(--muted-foreground)] truncate">EduPro</div>
+            <div className="text-[11px] text-[var(--muted-foreground)] truncate">Lectiva</div>
           </div>
         </div>
 

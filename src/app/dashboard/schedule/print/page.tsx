@@ -35,7 +35,7 @@ export default async function PrintSchedulePage({
   const where: { class?: { id?: string; course: { schoolId: string } }; teacherId?: string; classId?: string } = {
     class: { course: { schoolId } },
   };
-  let title = `${school?.name ?? "EduPro"} · Horário`;
+  let title = `${school?.name ?? "Lectiva"} · Horário`;
 
   if (sp.classId) {
     where.classId = sp.classId;

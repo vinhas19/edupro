@@ -1,0 +1,35 @@
+[build]
+  # 1. Gera Prisma client
+  # 2. Aplica migrações usando DIRECT_URL (porta 5432 direct, não o pooler)
+  # 3. Build do Next.js (que entretanto usa DATABASE_URL pooled em runtime)
+  command = "npx prisma generate && DATABASE_URL=$DIRECT_URL npx prisma migrate deploy && npx next build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--legacy-peer-deps=false"
+
+# Next.js plugin oficial — gere App Router, server actions, edge runtime, etc.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Headers de segurança razoáveis para produção
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Cache agressivo para assets estáticos do Next
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Service worker tem de ser sempre fresco
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

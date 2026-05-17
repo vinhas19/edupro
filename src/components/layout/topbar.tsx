@@ -39,7 +39,7 @@ function getTitle(pathname: string): string {
   for (const [prefix, title] of entries) {
     if (pathname === prefix || pathname.startsWith(prefix + "/")) return title;
   }
-  return "EduPro";
+  return "Lectiva";
 }
 
 interface TopbarProps {
@@ -53,7 +53,7 @@ export function Topbar({ userName, userEmail, userRole }: TopbarProps) {
   const router = useRouter();
 
   function openSidebar() {
-    window.dispatchEvent(new CustomEvent("edupro:open-sidebar"));
+    window.dispatchEvent(new CustomEvent("lectiva:open-sidebar"));
   }
 
   const title = getTitle(pathname);

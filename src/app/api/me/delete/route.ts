@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   if (!ok) return NextResponse.json({ error: "Palavra-passe incorreta." }, { status: 401 });
 
   const anonId = `anon-${user.id.slice(-8)}`;
-  const anonEmail = `${anonId}@anonymous.edupro.local`;
+  const anonEmail = `${anonId}@anonymous.lectiva.local`;
 
   await prisma.$transaction([
     prisma.user.update({

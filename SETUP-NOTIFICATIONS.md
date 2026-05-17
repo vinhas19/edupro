@@ -1,6 +1,6 @@
 # Setup — Sistema de Notificações Multi-Canal
 
-Este documento descreve como ativar o sistema de notificações (in-app, push, email, SMS) que foi adicionado ao EduPro.
+Este documento descreve como ativar o sistema de notificações (in-app, push, email, SMS) que foi adicionado ao Lectiva.
 
 ## 1. Instalar dependências
 
@@ -41,7 +41,7 @@ npx prisma generate
 4. Adiciona ao `.env`:
    ```
    RESEND_API_KEY="re_..."
-   RESEND_FROM_EMAIL="EduPro <noreply@teudominio.pt>"
+   RESEND_FROM_EMAIL="Lectiva <noreply@teudominio.pt>"
    RESEND_REPLY_TO="suporte@teudominio.pt"
    ```
 
@@ -50,7 +50,7 @@ npx prisma generate
 ## 4. Provisionar Twilio (SMS)
 
 1. Cria conta em [twilio.com](https://twilio.com)
-2. Em **Phone Numbers**, compra um número OU cria um **Messaging Service** (recomendado — permite sender ID alfanumérico "EduPro" e opt-out automático em mercados que o exigem)
+2. Em **Phone Numbers**, compra um número OU cria um **Messaging Service** (recomendado — permite sender ID alfanumérico "Lectiva" e opt-out automático em mercados que o exigem)
 3. Em **Console**, copia o Account SID e Auth Token
 4. Adiciona ao `.env`:
    ```

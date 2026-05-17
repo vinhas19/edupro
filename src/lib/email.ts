@@ -36,7 +36,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     return { ok: false, skipped: true, error: "RESEND_API_KEY missing" };
   }
 
-  const from = process.env.RESEND_FROM_EMAIL ?? "EduPro <noreply@edupro.local>";
+  const from = process.env.RESEND_FROM_EMAIL ?? "Lectiva <noreply@lectiva.local>";
   const replyTo = params.replyTo ?? process.env.RESEND_REPLY_TO;
 
   let html = params.html;

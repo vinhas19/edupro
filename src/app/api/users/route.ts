@@ -68,7 +68,7 @@ export async function POST(req: Request) {
   // Welcome email (best-effort, doesn't block response)
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const { html, text } = welcomeEmail({
-    appName: "EduPro",
+    appName: "Lectiva",
     schoolName: user.school.name,
     appUrl,
     recipientName: user.name,
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
   });
   sendEmail({
     to: user.email,
-    subject: `Bem-vindo a EduPro · ${user.school.name}`,
+    subject: `Bem-vindo a Lectiva · ${user.school.name}`,
     html,
     text,
     tag: "welcome",

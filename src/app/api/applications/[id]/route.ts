@@ -65,7 +65,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       // Welcome email com password temporária
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
       const { html, text } = welcomeEmail({
-        appName: "EduPro",
+        appName: "Lectiva",
         schoolName: app.school.name,
         appUrl,
         recipientName: user.name,

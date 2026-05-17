@@ -76,7 +76,7 @@ export default async function ProfilePage() {
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="text-sm text-muted-foreground">Domínio</span>
-                <code className="text-xs bg-muted px-2 py-0.5 rounded">{user.school.slug}.edupro.pt</code>
+                <code className="text-xs bg-muted px-2 py-0.5 rounded">{user.school.slug}.lectiva.pt</code>
               </div>
             </CardContent>
           </Card>

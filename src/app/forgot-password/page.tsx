@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,14 @@ import { GraduationCap, Loader2, MailCheck, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ForgotPasswordForm />
+    </Suspense>
+  );
+}
+
+function ForgotPasswordForm() {
   const sp = useSearchParams();
   const [schoolSlug, setSchoolSlug] = useState(sp?.get("school") ?? "");
   const [email, setEmail] = useState("");

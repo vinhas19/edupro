@@ -103,7 +103,7 @@ export function SubstitutionAssignedEmail({
 
       {url ? (
         <Button href={url} style={styles.ctaButton}>
-          Abrir EduPro
+          Abrir Lectiva
         </Button>
       ) : null}
     </EmailLayout>

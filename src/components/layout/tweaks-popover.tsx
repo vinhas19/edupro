@@ -41,7 +41,7 @@ function applyAccent(accent: string) {
 
 function applyDark(isDark: boolean) {
   document.documentElement.classList.toggle("dark", isDark);
-  localStorage.setItem("edupro:theme", isDark ? "dark" : "light");
+  localStorage.setItem("lectiva:theme", isDark ? "dark" : "light");
 }
 
 function applyCardStyle(style: string) {
@@ -74,11 +74,11 @@ export function TweaksPopover() {
   const [sidebarStyle, setSidebarStyle] = useState("floating");
 
   useEffect(() => {
-    const a = localStorage.getItem("edupro:accent") ?? "blue";
-    const dark = localStorage.getItem("edupro:theme") === "dark"
-      || (!localStorage.getItem("edupro:theme") && document.documentElement.classList.contains("dark"));
-    const card = localStorage.getItem("edupro:card-style") ?? "elevated";
-    const sb = localStorage.getItem("edupro:sidebar-style") ?? "floating";
+    const a = localStorage.getItem("lectiva:accent") ?? "blue";
+    const dark = localStorage.getItem("lectiva:theme") === "dark"
+      || (!localStorage.getItem("lectiva:theme") && document.documentElement.classList.contains("dark"));
+    const card = localStorage.getItem("lectiva:card-style") ?? "elevated";
+    const sb = localStorage.getItem("lectiva:sidebar-style") ?? "floating";
     setAccent(a);
     setIsDark(dark);
     setCardStyle(card);
@@ -90,7 +90,7 @@ export function TweaksPopover() {
 
   function pickAccent(key: string) {
     setAccent(key);
-    localStorage.setItem("edupro:accent", key);
+    localStorage.setItem("lectiva:accent", key);
     applyAccent(key);
   }
   function toggleDark(v: boolean) {
@@ -99,12 +99,12 @@ export function TweaksPopover() {
   }
   function pickCard(key: string) {
     setCardStyle(key);
-    localStorage.setItem("edupro:card-style", key);
+    localStorage.setItem("lectiva:card-style", key);
     applyCardStyle(key);
   }
   function pickSidebar(key: string) {
     setSidebarStyle(key);
-    localStorage.setItem("edupro:sidebar-style", key);
+    localStorage.setItem("lectiva:sidebar-style", key);
     applySidebarStyle(key);
   }
 

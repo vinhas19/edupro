@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     },
   });
 
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "EduPro";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "Lectiva";
   const body = `${appName}: o teu codigo de verificacao e ${code}. Expira em ${OTP_TTL_MINUTES} minutos.`;
   const res = await sendSms({ to: phoneE164, body });
 

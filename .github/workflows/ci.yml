@@ -19,11 +19,11 @@ jobs:
     env:
       # Dummy values so Prisma generate and Next.js build don't fail.
       # Real secrets only matter at runtime.
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/edupro?schema=public
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/lectiva?schema=public
       AUTH_SECRET: ci-secret-not-used-in-runtime-ci-builds-only
       AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
-      NEXT_PUBLIC_APP_NAME: EduPro
+      NEXT_PUBLIC_APP_NAME: Lectiva
       NEXT_PUBLIC_APP_DOMAIN: localhost:3000
 
     steps:

@@ -5,7 +5,7 @@ const accountId = process.env.R2_ACCOUNT_ID ?? "";
 const accessKeyId = process.env.R2_ACCESS_KEY_ID ?? "";
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY ?? "";
 
-export const R2_BUCKET = process.env.R2_BUCKET_NAME ?? "edupro-files";
+export const R2_BUCKET = process.env.R2_BUCKET_NAME ?? "lectiva-files";
 export const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
 export const R2_CONFIGURED = !!(accountId && accessKeyId && secretAccessKey && R2_PUBLIC_URL);
 

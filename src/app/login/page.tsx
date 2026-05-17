@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -22,6 +22,14 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -65,7 +73,7 @@ export default function LoginPage() {
             <GraduationCap className="h-7 w-7" strokeWidth={1.8} />
           </div>
           <div className="text-center">
-            <h1 className="text-[28px] font-bold tracking-[-0.022em]">EduPro</h1>
+            <h1 className="text-[28px] font-bold tracking-[-0.022em]">Lectiva</h1>
             <p className="text-[14px] text-[var(--muted-foreground)]">
               Plataforma de gestão escolar
             </p>
@@ -145,7 +153,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} EduPro · Gestão de Cursos Profissionais
+          © {new Date().getFullYear()} Lectiva · Gestão de Cursos Profissionais
         </p>
       </div>
     </div>

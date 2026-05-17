@@ -50,7 +50,7 @@ export function buildICal(opts: {
   const lines: string[] = [];
   lines.push("BEGIN:VCALENDAR");
   lines.push("VERSION:2.0");
-  lines.push("PRODID:-//EduPro//Schedule//PT");
+  lines.push("PRODID:-//Lectiva//Schedule//PT");
   lines.push(`X-WR-CALNAME:${escapeText(opts.calName)}`);
   lines.push("X-WR-TIMEZONE:Europe/Lisbon");
 
@@ -77,7 +77,7 @@ export function buildICal(opts: {
     const untilStr =
       `${until.getFullYear()}${pad(until.getMonth() + 1)}${pad(until.getDate())}T235959Z`;
 
-    const uid = crypto.createHash("sha1").update(b.id + dtStamp).digest("hex") + "@edupro";
+    const uid = crypto.createHash("sha1").update(b.id + dtStamp).digest("hex") + "@lectiva";
 
     let summary = b.subject;
     if (b.className) summary += ` · ${b.className}`;

@@ -1,4 +1,4 @@
-# EduPro — Checklist de produção
+# Lectiva — Checklist de produção
 
 Este documento lista os passos obrigatórios antes de pôr a aplicação no ar para uma escola real.
 
@@ -8,30 +8,30 @@ Todas estas têm de estar definidas em produção:
 
 ```bash
 # Base de dados
-DATABASE_URL="postgresql://user:pass@host:5432/edupro?schema=public&sslmode=require"
+DATABASE_URL="postgresql://user:pass@host:5432/lectiva?schema=public&sslmode=require"
 
 # Auth
 AUTH_SECRET="<gerar com: openssl rand -base64 48>"
-AUTH_URL="https://app.edupro.pt"
-NEXT_PUBLIC_APP_URL="https://app.edupro.pt"
+AUTH_URL="https://app.lectiva.pt"
+NEXT_PUBLIC_APP_URL="https://app.lectiva.pt"
 
 # Cloudflare R2
 R2_ACCOUNT_ID="..."
 R2_ACCESS_KEY_ID="..."
 R2_SECRET_ACCESS_KEY="..."
-R2_BUCKET_NAME="edupro-files"
-R2_PUBLIC_URL="https://cdn.edupro.pt"
+R2_BUCKET_NAME="lectiva-files"
+R2_PUBLIC_URL="https://cdn.lectiva.pt"
 
 # Web Push (gerar uma vez: npx web-push generate-vapid-keys)
 VAPID_PUBLIC_KEY="..."
 VAPID_PRIVATE_KEY="..."
-VAPID_SUBJECT="mailto:admin@edupro.pt"
+VAPID_SUBJECT="mailto:admin@lectiva.pt"
 NEXT_PUBLIC_VAPID_PUBLIC_KEY="<igual ao VAPID_PUBLIC_KEY>"
 
 # Email transacional (Resend)
 RESEND_API_KEY="re_..."
-RESEND_FROM_EMAIL="EduPro <noreply@app.edupro.pt>"
-RESEND_REPLY_TO="suporte@edupro.pt"
+RESEND_FROM_EMAIL="Lectiva <noreply@app.lectiva.pt>"
+RESEND_REPLY_TO="suporte@lectiva.pt"
 
 # Error tracking (opcional mas RECOMENDADO)
 SENTRY_DSN="https://...@sentry.io/..."
@@ -62,7 +62,7 @@ npx prisma migrate deploy                   # em produção (CI)
 ## 3. CORS no R2
 
 ```bash
-R2_CORS_ORIGINS="https://app.edupro.pt" npm run r2:cors
+R2_CORS_ORIGINS="https://app.lectiva.pt" npm run r2:cors
 ```
 
 ## 4. Healthcheck
@@ -70,7 +70,7 @@ R2_CORS_ORIGINS="https://app.edupro.pt" npm run r2:cors
 Configura o uptime monitor (UptimeRobot, BetterStack, Pingdom, etc.) para:
 
 ```
-GET https://app.edupro.pt/api/health
+GET https://app.lectiva.pt/api/health
 ```
 
 Retorna 200 se DB está OK, 503 se não. Alerta no Slack/email se 503 > 2 minutos.

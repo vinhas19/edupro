@@ -1,6 +1,6 @@
 self.addEventListener("push", function (event) {
   if (!event.data) return;
-  let payload = { title: "EduPro", body: "Nova notificação", url: "/dashboard", tag: undefined };
+  let payload = { title: "Lectiva", body: "Nova notificação", url: "/dashboard", tag: undefined };
   try {
     payload = { ...payload, ...event.data.json() };
   } catch (e) {

@@ -19,7 +19,7 @@ interface LayoutProps {
 }
 
 export function EmailLayout({ preview, heading, schoolName, children }: LayoutProps) {
-  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "EduPro";
+  const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "Lectiva";
   return (
     <Html>
       <Head />

@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    serverActions: { allowedOrigins: ["localhost:3000", "*.edupro.pt"] },
+    serverActions: { allowedOrigins: ["localhost:3000", "*.lectiva.pt"] },
   },
 };
 

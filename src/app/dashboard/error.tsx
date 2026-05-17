@@ -12,7 +12,7 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[EduPro/dashboard]", error);
+    console.error("[Lectiva/dashboard]", error);
   }, [error]);
 
   return (

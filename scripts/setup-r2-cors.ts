@@ -28,7 +28,7 @@ loadEnv();
 const accountId = process.env.R2_ACCOUNT_ID;
 const accessKeyId = process.env.R2_ACCESS_KEY_ID;
 const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-const bucket = process.env.R2_BUCKET_NAME ?? "edupro-files";
+const bucket = process.env.R2_BUCKET_NAME ?? "lectiva-files";
 
 if (!accountId || !accessKeyId || !secretAccessKey) {
   console.error("[setup-r2-cors] Missing env. Need R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY in .env");
@@ -41,7 +41,7 @@ const ALLOWED_ORIGINS: string[] = (process.env.R2_CORS_ORIGINS
   : [
       "http://localhost:3000",
       "http://127.0.0.1:3000",
-      // "https://app.edupro.pt",
+      // "https://app.lectiva.pt",
     ]);
 
 const client = new S3Client({

@@ -113,7 +113,7 @@ export async function GET(req: Request) {
   return new NextResponse(JSON.stringify(data, null, 2), {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="edupro-dados-${userId}-${new Date().toISOString().slice(0,10)}.json"`,
+      "Content-Disposition": `attachment; filename="lectiva-dados-${userId}-${new Date().toISOString().slice(0,10)}.json"`,
     },
   });
 }

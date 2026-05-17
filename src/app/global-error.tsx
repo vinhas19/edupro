@@ -10,7 +10,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[EduPro] FATAL:", error);
+    console.error("[Lectiva] FATAL:", error);
   }, [error]);
 
   return (
