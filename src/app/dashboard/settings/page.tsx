@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScheduleConfigForm } from "@/components/settings/schedule-config-form";
 import { TimeSlotsEditor } from "@/components/settings/time-slots-editor";
+import { FeaturesForm } from "@/components/settings/features-form";
 import { Bell, ChevronRight } from "lucide-react";
 
 const PLAN_LABELS: Record<Plan, string> = {
@@ -168,6 +169,26 @@ export default async function SettingsPage() {
                 dayEnd: school.dayEnd,
                 blockMinutes: school.blockMinutes,
                 breakMinutes: school.breakMinutes,
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Módulos opcionais</CardTitle>
+            <p className="text-[12px] text-muted-foreground">
+              Ativa apenas o que a tua escola precisa. Podes mudar depois.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <FeaturesForm
+              initial={{
+                featurePautas: school.featurePautas,
+                featureEnrollment: school.featureEnrollment,
+                featureBilling: school.featureBilling,
+                billingVatId: school.billingVatId,
+                billingAddress: school.billingAddress,
               }}
             />
           </CardContent>

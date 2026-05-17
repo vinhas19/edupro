@@ -51,15 +51,19 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   }
 
   try {
-    const res = await resend.emails.send({
+    // Resend v6's TS types use a discriminated union (template vs html/text) that
+    // doesn't narrow cleanly through our wrapper. Runtime accepts the shape below.
+    const payload: Parameters<typeof resend.emails.send>[0] = {
       from,
       to: params.to,
       subject: params.subject,
-      html,
+      html: html ?? "",
       text,
       replyTo,
-      tags: params.tag ? [{ name: "category", value: params.tag }] : undefined,
-    });
+      ...(params.tag ? { tags: [{ name: "category", value: params.tag }] } : {}),
+    } as Parameters<typeof resend.emails.send>[0];
+
+    const res = await resend.emails.send(payload);
     if (res.error) {
       return { ok: false, error: res.error.message ?? String(res.error) };
     }

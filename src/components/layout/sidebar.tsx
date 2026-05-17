@@ -11,7 +11,7 @@ import {
   Briefcase, Award, FolderOpen, Bell, Settings,
   GraduationCap, BarChart3, UserCheck, MessageSquare, UserX,
   CalendarDays, Search, ChevronRight, X,
-  FileCheck, ScrollText, Upload, Heart, DoorOpen,
+  FileCheck, ScrollText, Upload, Heart, DoorOpen, Receipt, FileSpreadsheet,
 } from "lucide-react";
 
 type NavItem = {
@@ -24,6 +24,8 @@ type NavItem = {
   allowedRoles?: Role[];
   // Blacklist: roles que NUNCA vêem este item, mesmo cumprindo minRole.
   hideForRoles?: Role[];
+  // Feature flag (módulo opcional da escola) — só mostra se feature[key] === true
+  featureKey?: "pautas" | "enrollment" | "billing";
   badge?: number;
 };
 
@@ -79,9 +81,19 @@ const NAV_SECTIONS: NavSection[] = [
       { label: "Utilizadores",  href: "/dashboard/users",         icon: Users,      tint: "var(--tint-cyan)",   minRole: Role.SCHOOL_ADMIN },
       { label: "Salas",         href: "/dashboard/rooms",             icon: DoorOpen,   tint: "var(--tint-indigo)", minRole: Role.SCHOOL_ADMIN },
       { label: "Enc. Educação", href: "/dashboard/admin/guardians",   icon: Heart,      tint: "var(--tint-pink)",   minRole: Role.SCHOOL_ADMIN },
+      { label: "Pautas",        href: "/dashboard/pautas",        icon: FileSpreadsheet, tint: "var(--tint-blue)",  minRole: Role.CLASS_DIRECTOR, featureKey: "pautas" },
+      { label: "Candidaturas",  href: "/dashboard/admin/applications", icon: ClipboardList, tint: "var(--tint-orange)", minRole: Role.SCHOOL_ADMIN, featureKey: "enrollment" },
+      { label: "Faturação",     href: "/dashboard/admin/billing", icon: Receipt,    tint: "var(--tint-green)",  minRole: Role.SCHOOL_ADMIN, featureKey: "billing" },
       { label: "Importar",      href: "/dashboard/admin/import",  icon: Upload,     tint: "var(--tint-teal)",   minRole: Role.SCHOOL_ADMIN },
       { label: "Auditoria",     href: "/dashboard/audit",         icon: ScrollText, tint: "var(--tint-purple)", minRole: Role.SCHOOL_ADMIN },
       { label: "Definições",    href: "/dashboard/settings",      icon: Settings,   tint: "var(--tint-gray)",   minRole: Role.SCHOOL_ADMIN },
+    ],
+  },
+  {
+    label: "Finanças",
+    items: [
+      // Aluno: vê as próprias faturas
+      { label: "As minhas faturas", href: "/dashboard/billing", icon: Receipt, tint: "var(--tint-green)", minRole: Role.STUDENT, hideForRoles: [Role.GUARDIAN], featureKey: "billing" },
     ],
   },
 ];
@@ -93,9 +105,18 @@ interface SidebarProps {
   schoolName: string;
   unreadMessages?: number;
   unreadNotifications?: number;
+  features?: { pautas: boolean; enrollment: boolean; billing: boolean };
 }
 
-export function Sidebar({ userRole, userName, userEmail, schoolName, unreadMessages = 0, unreadNotifications = 0 }: SidebarProps) {
+export function Sidebar({
+  userRole,
+  userName,
+  userEmail,
+  schoolName,
+  unreadMessages = 0,
+  unreadNotifications = 0,
+  features = { pautas: true, enrollment: false, billing: false },
+}: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -131,6 +152,8 @@ export function Sidebar({ userRole, userName, userEmail, schoolName, unreadMessa
         if (it.allowedRoles) return it.allowedRoles.includes(userRole);
         // Blacklist exclui após cumprir hierarquia
         if (it.hideForRoles?.includes(userRole)) return false;
+        // Feature flag (módulo opcional da escola)
+        if (it.featureKey && !features[it.featureKey]) return false;
         return hasRole(userRole, it.minRole);
       })
       .filter((it) => !search || it.label.toLowerCase().includes(search.toLowerCase())),

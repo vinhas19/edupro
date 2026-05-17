@@ -110,7 +110,15 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Palavra-passe</Label>
+                  <a
+                    href={`/forgot-password?school=${encodeURIComponent(defaultSlug)}`}
+                    className="text-[11px] text-[var(--primary)] hover:underline"
+                  >
+                    Esqueci-me
+                  </a>
+                </div>
                 <Input
                   id="password"
                   type="password"

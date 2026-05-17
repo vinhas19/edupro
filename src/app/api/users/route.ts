@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { hasRole } from "@/lib/permissions";
+import { sendEmail } from "@/lib/email";
+import { welcomeEmail } from "@/lib/email-templates";
+import { logAudit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
@@ -50,7 +53,37 @@ export async function POST(req: Request) {
       passwordHash,
       schoolId: session.user.schoolId,
     },
+    include: { school: { select: { name: true, slug: true } } },
   });
+
+  await logAudit({
+    schoolId: session.user.schoolId,
+    userId: session.user.id,
+    action: "user.create",
+    entity: "User",
+    entityId: user.id,
+    meta: { role },
+  });
+
+  // Welcome email (best-effort, doesn't block response)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const { html, text } = welcomeEmail({
+    appName: "EduPro",
+    schoolName: user.school.name,
+    appUrl,
+    recipientName: user.name,
+    email: user.email,
+    loginUrl: `${appUrl}/login?school=${encodeURIComponent(user.school.slug)}`,
+    schoolSlug: user.school.slug,
+    temporaryPassword: password,
+  });
+  sendEmail({
+    to: user.email,
+    subject: `Bem-vindo a EduPro · ${user.school.name}`,
+    html,
+    text,
+    tag: "welcome",
+  }).catch((err) => console.error("[users] welcome email failed", err));
 
   return NextResponse.json({ id: user.id }, { status: 201 });
 }

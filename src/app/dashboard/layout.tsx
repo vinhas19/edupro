@@ -37,6 +37,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
         schoolName={school.name}
         unreadMessages={unreadMessages}
         unreadNotifications={unreadNotifications}
+        features={{
+          pautas: school.featurePautas,
+          enrollment: school.featureEnrollment,
+          billing: school.featureBilling,
+        }}
       />
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         <Topbar

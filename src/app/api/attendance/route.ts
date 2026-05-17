@@ -99,7 +99,7 @@ export async function POST(req: Request) {
               subjectName,
               lessonDate,
               lessonTime,
-              status: alert.status,
+              status: alert.status as "ABSENT" | "LATE",
               justifyUrl,
             }),
           },

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { Role, FileVisibility } from "@prisma/client";
 import { hasRole } from "@/lib/permissions";
 import { presignUpload, buildKey, R2_CONFIGURED, R2_BUCKET } from "@/lib/r2";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const VISIBILITIES = [
@@ -51,6 +52,15 @@ function scopeFor(visibility: (typeof VISIBILITIES)[number]) {
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Cap presign requests: 60/min per user
+  const blocked = enforceRateLimit(req, {
+    key: "files:presign",
+    limit: 60,
+    windowMs: 60_000,
+    clientId: session.user.id,
+  });
+  if (blocked) return blocked;
 
   if (!R2_CONFIGURED) {
     return NextResponse.json(

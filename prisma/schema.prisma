@@ -25,6 +25,16 @@ model School {
   blockMinutes   Int     @default(50)        // duração de cada bloco
   breakMinutes   Int     @default(10)        // intervalo entre blocos
 
+  // Feature flags — módulos opcionais activáveis por escola
+  featurePautas      Boolean @default(true)   // Pautas oficiais em PDF
+  featureEnrollment  Boolean @default(false)  // Inscrições/matrículas online
+  featureBilling     Boolean @default(false)  // Faturação de propinas
+
+  // Faturação (só usado se featureBilling = true)
+  billingCurrency    String  @default("EUR")
+  billingVatId       String?                  // NIF da escola
+  billingAddress     String?                  // Morada legal (para faturas)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -35,6 +45,8 @@ model School {
   notifications Notification[]
   academicYears AcademicYear[]
   timeSlots     TimeSlot[]
+  applications  Application[]
+  invoices      Invoice[]
 
   @@map("schools")
 }
@@ -57,6 +69,134 @@ enum Plan {
   BASIC
   PRO
   ENTERPRISE
+}
+
+// ─── INSCRIÇÕES / MATRÍCULAS ──────────────────────────────────────────────────
+
+model Application {
+  id              String            @id @default(cuid())
+  schoolId        String
+  school          School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  courseId        String?
+  course          Course?           @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  academicYearId  String?
+  academicYear    AcademicYear?     @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
+
+  // Candidato
+  fullName        String
+  email           String
+  phone           String?
+  birthDate       DateTime?
+  citizenId       String?            // Cartão de Cidadão / BI
+  vatId           String?            // NIF
+  address         String?
+  postalCode      String?
+  city            String?
+
+  // Educação anterior
+  previousSchool  String?
+  previousYear    String?            // ex: "9º ano"
+  previousGrade   Float?
+
+  // EE
+  guardianName    String?
+  guardianEmail   String?
+  guardianPhone   String?
+  guardianRelation String?           // "Mãe", "Pai", "Tutor"
+
+  // Documentos (URLs R2 — uploaded via presigned)
+  documentsJson   Json?              // [{ kind, url, name }]
+
+  notes           String?            // notas internas da escola
+
+  status          ApplicationStatus  @default(PENDING)
+  reviewedById    String?
+  reviewedBy      User?              @relation("ApplicationReviewer", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  rejectionReason String?
+  // Quando ACCEPTED, podemos guardar referência ao User criado
+  resultUserId    String?
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([schoolId, status])
+  @@map("applications")
+}
+
+enum ApplicationStatus {
+  PENDING
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  WAITLISTED
+  WITHDRAWN
+}
+
+// ─── FATURAÇÃO ────────────────────────────────────────────────────────────────
+
+model Invoice {
+  id          String        @id @default(cuid())
+  schoolId    String
+  school      School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     User          @relation("InvoiceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  number      String        // ex: "FT 2025/00012"
+  description String        // ex: "Propina Setembro 2025"
+  amount      Decimal       @db.Decimal(10, 2)
+  currency    String        @default("EUR")
+  vatRate     Decimal       @db.Decimal(4, 2) @default(0)
+  vatAmount   Decimal       @db.Decimal(10, 2) @default(0)
+  total       Decimal       @db.Decimal(10, 2)
+  issueDate   DateTime      @default(now())
+  dueDate     DateTime
+  paidAt      DateTime?
+  status      InvoiceStatus @default(PENDING)
+
+  payments    Payment[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([schoolId, number])
+  @@index([studentId, status])
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Payment {
+  id          String         @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice        @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount      Decimal        @db.Decimal(10, 2)
+  method      PaymentMethod
+  reference   String?        // ID externo (Multibanco, MBWAY, transferência)
+  paidAt      DateTime       @default(now())
+  notes       String?
+  recordedById String?
+  recordedBy  User?          @relation("PaymentRecorder", fields: [recordedById], references: [id])
+
+  createdAt   DateTime       @default(now())
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  MULTIBANCO
+  MBWAY
+  CARD
+  CHECK
+  OTHER
 }
 
 // ─── USERS & AUTH ─────────────────────────────────────────────────────────────
@@ -115,9 +255,11 @@ model User {
   pushSubscriptions PushSubscription[]
   auditLogs         AuditLog[]
   foldersCreated    Folder[]          @relation("FolderCreator")
-
   notificationPreference NotificationPreference?
-  phoneVerifications     PhoneVerification[]
+  phoneVerifications PhoneVerification[]
+  applicationsReviewed Application[]  @relation("ApplicationReviewer")
+  invoices             Invoice[]      @relation("InvoiceStudent")
+  paymentsRecorded     Payment[]      @relation("PaymentRecorder")
 
   accounts Account[]
   sessions Session[]
@@ -228,7 +370,8 @@ model AcademicYear {
   schoolId  String
   school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  classes Class[]
+  classes      Class[]
+  applications Application[]
 
   @@map("academic_years")
 }
@@ -250,8 +393,9 @@ model Course {
   director      User?   @relation("CourseDirector", fields: [directorId], references: [id])
   createdAt     DateTime @default(now())
 
-  subjects Subject[]
-  classes  Class[]
+  subjects     Subject[]
+  classes      Class[]
+  applications Application[]
 
   @@unique([code, schoolId])
   @@map("courses")
@@ -740,6 +884,7 @@ model Notification {
   school        School            @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   senderId      String
   sender        User              @relation(fields: [senderId], references: [id])
+  category      NotificationCategory? // canal lógico (para preferences)
   title         String
   content       String
   type          NotificationType  @default(INFO)

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { hasRole } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { invalidateSchoolFeatures } from "@/lib/school-features";
 import { z } from "zod";
 
 const schema = z.object({
@@ -15,6 +16,11 @@ const schema = z.object({
   dayEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   blockMinutes: z.number().int().min(20).max(120).optional(),
   breakMinutes: z.number().int().min(0).max(60).optional(),
+  featurePautas: z.boolean().optional(),
+  featureEnrollment: z.boolean().optional(),
+  featureBilling: z.boolean().optional(),
+  billingVatId: z.string().nullable().optional(),
+  billingAddress: z.string().nullable().optional(),
 });
 
 export async function PATCH(req: Request) {
@@ -40,6 +46,7 @@ export async function PATCH(req: Request) {
     where: { id: session.user.schoolId },
     data: parsed.data,
   });
+  invalidateSchoolFeatures(session.user.schoolId);
 
   await logAudit({
     schoolId: session.user.schoolId,

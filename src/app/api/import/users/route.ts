@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
 import { hasRole } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 
 interface Row {
@@ -60,6 +61,15 @@ export async function POST(req: Request) {
   if (!hasRole(session.user.role, Role.SCHOOL_ADMIN)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  // Cap CSV imports: 5/min per admin
+  const blocked = enforceRateLimit(req, {
+    key: "import:users",
+    limit: 5,
+    windowMs: 60_000,
+    clientId: session.user.id,
+  });
+  if (blocked) return blocked;
 
   const ct = req.headers.get("content-type") ?? "";
   let csvText = "";

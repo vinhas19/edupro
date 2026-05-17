@@ -9,6 +9,7 @@ import { pt } from "date-fns/locale";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { NotificationsToggle } from "@/components/settings/notifications-toggle";
 import { CalendarTokenSection } from "@/components/profile/calendar-token-section";
+import { PrivacySection } from "@/components/profile/privacy-section";
 import { ROLE_LABELS } from "@/lib/permissions";
 import { Bell, ChevronRight } from "lucide-react";
 
@@ -115,6 +116,18 @@ export default async function ProfilePage() {
             </CardHeader>
             <CardContent>
               <CalendarTokenSection initialToken={user.iCalToken} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Privacidade &amp; RGPD</CardTitle>
+              <p className="text-[12px] text-muted-foreground">
+                Direitos do titular dos dados (Regulamento Geral de Proteção de Dados).
+              </p>
+            </CardHeader>
+            <CardContent>
+              <PrivacySection />
             </CardContent>
           </Card>
         </div>
