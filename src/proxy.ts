@@ -4,7 +4,19 @@ import { authConfig } from "@/lib/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/_next", "/favicon.ico", "/images"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/inscricao",
+  "/api/auth",
+  "/api/health",
+  "/api/applications",
+  "/_next",
+  "/favicon.ico",
+  "/images",
+  "/sw.js",
+];
 
 export default auth(async function proxy(req) {
   const { pathname, hostname } = req.nextUrl;
