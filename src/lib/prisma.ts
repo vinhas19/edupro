@@ -13,6 +13,11 @@ function createPrismaClient() {
     max: 1,
     idleTimeoutMillis: 10_000,
     connectionTimeoutMillis: 10_000,
+    // TLS sem verificar CA chain. O Netlify Functions runtime não tem o CA
+    // intermédio que o pooler do Supabase usa, e dava
+    // "self-signed certificate in certificate chain". O tráfego continua
+    // encriptado — só não verificamos a cadeia de assinatura.
+    ssl: { rejectUnauthorized: false },
   });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({
