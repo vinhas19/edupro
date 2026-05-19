@@ -43,6 +43,12 @@ export default auth(async function proxy(req) {
     schoolSlug = schoolFromQuery;
   }
 
+  // Marketing landing page lives at "/" on the main domain.
+  // School subdomains keep redirecting unauthenticated visitors to /login.
+  if (pathname === "/" && !schoolSlug) {
+    return NextResponse.next();
+  }
+
   const requestHeaders = new Headers(req.headers);
   if (schoolSlug) {
     requestHeaders.set("x-school-slug", schoolSlug);
