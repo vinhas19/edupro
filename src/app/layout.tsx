@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { FloatingTweaks } from "@/components/layout/floating-tweaks";
 
 export const metadata: Metadata = {
   title: "Lectiva — Gestão Escolar",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }catch(e){}})();`}
         </Script>
         {children}
+        <FloatingTweaks />
         <Toaster richColors position="top-right" />
       </body>
     </html>
